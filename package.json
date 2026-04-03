@@ -1,0 +1,21 @@
+{
+  "name": "desafiotecnico_ibm",
+  "version": "1.0.0",
+  "description": "> **An intelligent web application that transforms lengthy documents into concise, customizable summaries using IBM's Granite AI model.**",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fernmoraes/DesafioTecnico_IBM.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/fernmoraes/DesafioTecnico_IBM/issues"
+  },
+  "homepage": "https://github.com/fernmoraes/DesafioTecnico_IBM#readme"
+}
