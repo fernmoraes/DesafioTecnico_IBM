@@ -144,19 +144,18 @@ class StorageService {
     this.summaries.set(summary.id, summary);
     
     // Update indexes
-    const userSums = this.userSummaries.get(data.userId) || [];
-    userSums.unshift(summary.id);
-    this.userSummaries.set(data.userId, userSums);
-    
+    if (data.userId) {
+      const userSums = this.userSummaries.get(data.userId) || [];
+      userSums.unshift(summary.id);
+      this.userSummaries.set(data.userId, userSums);
+
+      const user = this.users.get(data.userId);
+      if (user) user.summaryCount++;
+    }
+
     const docSums = this.documentSummaries.get(data.documentId) || [];
     docSums.push(summary.id);
     this.documentSummaries.set(data.documentId, docSums);
-    
-    // Update user summary count
-    const user = this.users.get(data.userId);
-    if (user) {
-      user.summaryCount++;
-    }
     
     return summary;
   }
@@ -213,23 +212,19 @@ class StorageService {
     if (!summary) return false;
     
     // Remove from indexes
-    const userSums = this.userSummaries.get(summary.userId) || [];
-    this.userSummaries.set(
-      summary.userId,
-      userSums.filter(id => id !== summaryId)
-    );
-    
+    if (summary.userId) {
+      const userSums = this.userSummaries.get(summary.userId) || [];
+      this.userSummaries.set(summary.userId, userSums.filter(id => id !== summaryId));
+
+      const user = this.users.get(summary.userId);
+      if (user && user.summaryCount > 0) user.summaryCount--;
+    }
+
     const docSums = this.documentSummaries.get(summary.documentId) || [];
     this.documentSummaries.set(
       summary.documentId,
       docSums.filter(id => id !== summaryId)
     );
-    
-    // Update user summary count
-    const user = this.users.get(summary.userId);
-    if (user && user.summaryCount > 0) {
-      user.summaryCount--;
-    }
     
     this.summaries.delete(summaryId);
     return true;

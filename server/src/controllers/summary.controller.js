@@ -13,11 +13,11 @@ const { HTTP_STATUS, ERROR_CODES, SUMMARY_MODES } = require('../utils/constants'
  */
 const generateSummary = async (req, res, next) => {
   try {
-    const { documentId, userId, mode } = req.body;
+    const { documentId, mode } = req.body;
 
     // Validate required fields
-    if (!documentId || !userId || !mode) {
-      const error = new Error('Missing required fields: documentId, userId, and mode are required');
+    if (!documentId || !mode) {
+      const error = new Error('Missing required fields: documentId and mode are required');
       error.name = 'ValidationError';
       return next(error);
     }
@@ -30,26 +30,11 @@ const generateSummary = async (req, res, next) => {
       return next(error);
     }
 
-    // Validate user exists
-    const user = storageService.getUser(userId);
-    if (!user) {
-      const error = new Error('User not found');
-      error.name = 'NotFoundError';
-      return next(error);
-    }
-
     // Get document
     const document = storageService.getDocument(documentId);
     if (!document) {
       const error = new Error('Document not found');
       error.name = 'NotFoundError';
-      return next(error);
-    }
-
-    // Verify document belongs to user
-    if (document.userId !== userId) {
-      const error = new Error('Unauthorized: Document does not belong to this user');
-      error.name = 'UnauthorizedError';
       return next(error);
     }
 
@@ -66,7 +51,7 @@ const generateSummary = async (req, res, next) => {
 
     // Create summary record
     const summary = storageService.createSummary({
-      userId,
+      userId: null,
       documentId,
       mode,
       summaryText,

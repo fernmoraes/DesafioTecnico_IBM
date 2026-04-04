@@ -10,7 +10,7 @@ module.exports = {
 
   // File upload limits
   MAX_FILE_SIZE: parseInt(process.env.MAX_FILE_SIZE) || 5 * 1024 * 1024, // 5MB
-  ALLOWED_FILE_TYPES: ['application/pdf', 'text/plain'],
+  ALLOWED_FILE_TYPES: ['application/pdf', 'application/x-pdf', 'text/plain'],
 
   // Error codes
   ERROR_CODES: {

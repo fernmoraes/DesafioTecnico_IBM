@@ -7,8 +7,8 @@ require('dotenv').config();
 const watsonxConfig = {
   apiKey: process.env.WATSONX_API_KEY,
   projectId: process.env.WATSONX_PROJECT_ID,
-  serviceUrl: process.env.WATSONX_SERVICE_URL || 'https://us-south.ml.cloud.ibm.com',
-  modelId: 'ibm/granite-13b-chat-v2',
+  serviceUrl: process.env.WATSONX_URL || process.env.WATSONX_SERVICE_URL || 'https://us-south.ml.cloud.ibm.com',
+  modelId: process.env.WATSONX_MODEL_ID || 'ibm/granite-3-8b-instruct',
   
   // Default model parameters
   defaultParameters: {

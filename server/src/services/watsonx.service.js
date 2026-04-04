@@ -11,7 +11,9 @@ class WatsonXService {
   constructor() {
     this.config = watsonxConfig;
     this.client = null;
-    
+    this.iamToken = null;
+    this.iamTokenExpiry = null;
+
     if (this.config.isConfigured) {
       this.initializeClient();
     }
@@ -29,6 +31,30 @@ class WatsonXService {
         'Accept': 'application/json'
       }
     });
+  }
+
+  /**
+   * Fetches an IAM Bearer token from the IBM Cloud IAM service
+   */
+  async getIAMToken() {
+    const now = Date.now();
+    if (this.iamToken && this.iamTokenExpiry && now < this.iamTokenExpiry) {
+      return this.iamToken;
+    }
+
+    const response = await axios.post(
+      'https://iam.cloud.ibm.com/identity/token',
+      new URLSearchParams({
+        grant_type: 'urn:ibm:params:oauth:grant-type:apikey',
+        apikey: this.config.apiKey
+      }),
+      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+    );
+
+    this.iamToken = response.data.access_token;
+    // Expire 5 minutes before actual expiry to avoid edge cases
+    this.iamTokenExpiry = now + (response.data.expires_in - 300) * 1000;
+    return this.iamToken;
   }
 
   /**
@@ -80,6 +106,8 @@ class WatsonXService {
    */
   async callAPI(prompt, parameters) {
     try {
+      const token = await this.getIAMToken();
+
       const requestBody = {
         model_id: this.config.modelId,
         input: prompt,
@@ -95,7 +123,7 @@ class WatsonXService {
         requestBody,
         {
           headers: {
-            'Authorization': `Bearer ${this.config.apiKey}`
+            'Authorization': `Bearer ${token}`
           }
         }
       );

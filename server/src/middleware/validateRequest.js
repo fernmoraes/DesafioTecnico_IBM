@@ -29,10 +29,10 @@ const validateUserCreation = (req, res, next) => {
  * Validates summary generation request
  */
 const validateSummaryGeneration = (req, res, next) => {
-  const { userId, documentId, mode, textContent } = req.body;
+  const { documentId, mode } = req.body;
   
-  if (!userId || !documentId || !mode || !textContent) {
-    const error = new Error('userId, documentId, mode, and textContent are required');
+  if (!documentId || !mode) {
+    const error = new Error('documentId and mode are required');
     error.name = 'ValidationError';
     return next(error);
   }
@@ -51,14 +51,6 @@ const validateSummaryGeneration = (req, res, next) => {
  * Validates file upload request
  */
 const validateFileUpload = (req, res, next) => {
-  const { userId } = req.body;
-  
-  if (!userId) {
-    const error = new Error('userId is required');
-    error.name = 'ValidationError';
-    return next(error);
-  }
-  
   if (!req.file) {
     const error = new Error('No file uploaded');
     error.name = 'ValidationError';

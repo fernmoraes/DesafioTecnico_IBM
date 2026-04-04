@@ -7,13 +7,11 @@ import SummaryDisplay from '../components/summary/SummaryDisplay';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import Button from '../components/common/Button';
 import Card from '../components/common/Card';
-import { useUser } from '../context/UserContext';
 import { useSummary } from '../context/SummaryContext';
 import { uploadDocument } from '../services/documentService';
 import { SUMMARY_MODES } from '../utils/constants';
 
 const HomePage = () => {
-  const { user } = useUser();
   const { currentSummary, loading, generateSummary } = useSummary();
   const [file, setFile] = useState(null);
   const [document, setDocument] = useState(null);
@@ -26,14 +24,9 @@ const HomePage = () => {
 
     if (!selectedFile) return;
 
-    if (!user) {
-      toast.error('Please create a profile first');
-      return;
-    }
-
     try {
       setUploading(true);
-      const uploadedDoc = await uploadDocument(selectedFile, user.id);
+      const uploadedDoc = await uploadDocument(selectedFile);
       setDocument(uploadedDoc);
       toast.success('Document uploaded successfully!');
     } catch (error) {
@@ -52,10 +45,8 @@ const HomePage = () => {
 
     try {
       await generateSummary({
-        userId: user.id,
         documentId: document.id,
         mode: selectedMode,
-        textContent: document.textContent,
       });
       toast.success('Summary generated successfully!');
     } catch (error) {

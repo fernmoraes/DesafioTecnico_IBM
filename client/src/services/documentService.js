@@ -11,10 +11,9 @@ import api from './api';
  * @param {string} userId - User ID
  * @returns {Promise<Object>} - Document object with extracted text
  */
-export const uploadDocument = async (file, userId) => {
+export const uploadDocument = async (file) => {
   const formData = new FormData();
   formData.append('file', file);
-  formData.append('userId', userId);
 
   const response = await api.post('/documents/upload', formData, {
     headers: {
