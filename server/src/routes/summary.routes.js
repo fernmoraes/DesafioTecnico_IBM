@@ -1,8 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const summaryController = require('../controllers/summary.controller');
-const { validateRequest } = require('../middleware/validateRequest');
-const { SUMMARY_MODES } = require('../utils/constants');
+const { validateSummaryGeneration } = require('../middleware/validateRequest');
 
 /**
  * Summary Routes
@@ -16,17 +15,7 @@ const { SUMMARY_MODES } = require('../utils/constants');
  */
 router.post(
   '/generate',
-  validateRequest({
-    body: {
-      documentId: { type: 'string', required: true },
-      userId: { type: 'string', required: true },
-      mode: { 
-        type: 'string', 
-        required: true,
-        enum: Object.values(SUMMARY_MODES)
-      }
-    }
-  }),
+  validateSummaryGeneration,
   summaryController.generateSummary
 );
 
@@ -42,60 +31,28 @@ router.get('/modes', summaryController.getSummaryModes);
  * @desc    Get a summary by ID
  * @access  Public
  */
-router.get(
-  '/:summaryId',
-  validateRequest({
-    params: {
-      summaryId: { type: 'string', required: true }
-    }
-  }),
-  summaryController.getSummary
-);
+router.get('/:summaryId', summaryController.getSummary);
 
 /**
  * @route   GET /api/summaries/user/:userId
  * @desc    Get all summaries for a user
  * @access  Public
  */
-router.get(
-  '/user/:userId',
-  validateRequest({
-    params: {
-      userId: { type: 'string', required: true }
-    }
-  }),
-  summaryController.getUserSummaries
-);
+router.get('/user/:userId', summaryController.getUserSummaries);
 
 /**
  * @route   GET /api/summaries/document/:documentId
  * @desc    Get all summaries for a document
  * @access  Public
  */
-router.get(
-  '/document/:documentId',
-  validateRequest({
-    params: {
-      documentId: { type: 'string', required: true }
-    }
-  }),
-  summaryController.getDocumentSummaries
-);
+router.get('/document/:documentId', summaryController.getDocumentSummaries);
 
 /**
  * @route   DELETE /api/summaries/:summaryId
  * @desc    Delete a summary
  * @access  Public
  */
-router.delete(
-  '/:summaryId',
-  validateRequest({
-    params: {
-      summaryId: { type: 'string', required: true }
-    }
-  }),
-  summaryController.deleteSummary
-);
+router.delete('/:summaryId', summaryController.deleteSummary);
 
 module.exports = router;
 

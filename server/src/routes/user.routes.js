@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/user.controller');
-const { validateRequest } = require('../middleware/validateRequest');
+const { validateUserCreation } = require('../middleware/validateRequest');
 
 /**
  * User Routes
@@ -15,12 +15,7 @@ const { validateRequest } = require('../middleware/validateRequest');
  */
 router.post(
   '/',
-  validateRequest({
-    body: {
-      name: { type: 'string', required: true, minLength: 2, maxLength: 100 },
-      email: { type: 'string', required: true, pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ }
-    }
-  }),
+  validateUserCreation,
   userController.createUser
 );
 
@@ -31,11 +26,6 @@ router.post(
  */
 router.get(
   '/:userId',
-  validateRequest({
-    params: {
-      userId: { type: 'string', required: true }
-    }
-  }),
   userController.getUser
 );
 
@@ -46,15 +36,6 @@ router.get(
  */
 router.put(
   '/:userId',
-  validateRequest({
-    params: {
-      userId: { type: 'string', required: true }
-    },
-    body: {
-      name: { type: 'string', required: false, minLength: 2, maxLength: 100 },
-      email: { type: 'string', required: false, pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ }
-    }
-  }),
   userController.updateUser
 );
 

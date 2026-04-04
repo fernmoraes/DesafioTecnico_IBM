@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const documentController = require('../controllers/document.controller');
-const { validateRequest } = require('../middleware/validateRequest');
-const { upload } = require('../config/multer.config');
+const { validateFileUpload } = require('../middleware/validateRequest');
+const upload = require('../config/multer.config');
 
 /**
  * Document Routes
@@ -17,11 +17,7 @@ const { upload } = require('../config/multer.config');
 router.post(
   '/upload',
   upload.single('file'),
-  validateRequest({
-    body: {
-      userId: { type: 'string', required: true }
-    }
-  }),
+  validateFileUpload,
   documentController.uploadDocument
 );
 
@@ -32,11 +28,6 @@ router.post(
  */
 router.get(
   '/:documentId',
-  validateRequest({
-    params: {
-      documentId: { type: 'string', required: true }
-    }
-  }),
   documentController.getDocument
 );
 
@@ -47,11 +38,6 @@ router.get(
  */
 router.get(
   '/user/:userId',
-  validateRequest({
-    params: {
-      userId: { type: 'string', required: true }
-    }
-  }),
   documentController.getUserDocuments
 );
 
@@ -62,11 +48,6 @@ router.get(
  */
 router.delete(
   '/:documentId',
-  validateRequest({
-    params: {
-      documentId: { type: 'string', required: true }
-    }
-  }),
   documentController.deleteDocument
 );
 

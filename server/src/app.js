@@ -2,8 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const corsConfig = require('./config/cors.config');
 const routes = require('./routes');
-const { errorHandler } = require('./middleware/errorHandler');
-const { logger } = require('./middleware/logger');
+const errorHandler = require('./middleware/errorHandler');
+const logger = require('./middleware/logger');
 
 /**
  * Express Application Setup
