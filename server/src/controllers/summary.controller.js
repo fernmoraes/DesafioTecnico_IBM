@@ -40,6 +40,7 @@ const generateSummary = async (req, res, next) => {
 
     // Generate summary using watsonx
     let summaryText;
+    const startTime = Date.now();
     try {
       summaryText = await watsonxService.generateSummary(document.textContent, mode);
     } catch (aiError) {
@@ -48,6 +49,10 @@ const generateSummary = async (req, res, next) => {
       error.name = 'AIServiceError';
       return next(error);
     }
+    const processingTime = Date.now() - startTime;
+
+    const originalWordCount = document.textContent.trim().split(/\s+/).filter(Boolean).length;
+    const summaryWordCount = summaryText.trim().split(/\s+/).filter(Boolean).length;
 
     // Create summary record
     const summary = storageService.createSummary({
@@ -55,7 +60,10 @@ const generateSummary = async (req, res, next) => {
       documentId,
       mode,
       summaryText,
-      originalFilename: document.filename
+      originalFilename: document.filename,
+      originalWordCount,
+      summaryWordCount,
+      processingTime
     });
 
     res.status(HTTP_STATUS.CREATED).json(createResponse(true, summary));
