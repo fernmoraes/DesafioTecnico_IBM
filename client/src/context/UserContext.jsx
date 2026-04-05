@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { createUser as createUserAPI, getUser as getUserAPI } from '../services/userService';
+import { createUser as createUserAPI, getUser as getUserAPI, updateUser as updateUserAPI } from '../services/userService';
 import { STORAGE_KEYS } from '../utils/constants';
 
 const UserContext = createContext();
@@ -22,8 +22,11 @@ export const UserProvider = ({ children }) => {
     const loadUser = () => {
       try {
         const savedUser = localStorage.getItem(STORAGE_KEYS.USER);
+        console.log('Loading user from localStorage:', savedUser);
         if (savedUser) {
-          setUser(JSON.parse(savedUser));
+          const parsedUser = JSON.parse(savedUser);
+          console.log('Parsed user:', parsedUser);
+          setUser(parsedUser);
         }
       } catch (err) {
         console.error('Error loading user from localStorage:', err);
@@ -40,10 +43,13 @@ export const UserProvider = ({ children }) => {
   useEffect(() => {
     if (user) {
       try {
+        console.log('Saving user to localStorage:', user);
         localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
       } catch (err) {
         console.error('Error saving user to localStorage:', err);
       }
+    } else {
+      console.log('User is null, not saving to localStorage');
     }
   }, [user]);
 
@@ -52,9 +58,11 @@ export const UserProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       const newUser = await createUserAPI({ name, email });
+      console.log('User created:', newUser);
       setUser(newUser);
       return newUser;
     } catch (err) {
+      console.error('Error creating user:', err);
       setError(err.message || 'Failed to create user');
       throw err;
     } finally {
@@ -63,10 +71,14 @@ export const UserProvider = ({ children }) => {
   };
 
   const updateUser = async (updates) => {
+    if (!user) {
+      throw new Error('No user to update');
+    }
+    
     try {
       setLoading(true);
       setError(null);
-      const updatedUser = { ...user, ...updates };
+      const updatedUser = await updateUserAPI(user.id, updates);
       setUser(updatedUser);
       return updatedUser;
     } catch (err) {

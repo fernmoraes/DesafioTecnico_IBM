@@ -12,6 +12,7 @@ import api from './api';
  */
 export const createUser = async (userData) => {
   const response = await api.post('/users', userData);
+  console.log('User created successfully:', response.data);
   return response.data;
 };
 
