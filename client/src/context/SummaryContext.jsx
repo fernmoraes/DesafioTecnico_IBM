@@ -18,6 +18,7 @@ export const useSummary = () => {
 export const SummaryProvider = ({ children }) => {
   const [summaries, setSummaries] = useState([]);
   const [currentSummary, setCurrentSummary] = useState(null);
+  const [currentDocument, setCurrentDocument] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -42,7 +43,13 @@ export const SummaryProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       const response = await getUserSummariesAPI(userId, params);
-      setSummaries(response.summaries || []);
+      const fromServer = response.summaries || [];
+      // Merge with in-session summaries (server may have restarted and lost them)
+      setSummaries(prev => {
+        const serverIds = new Set(fromServer.map(s => s.id));
+        const inSessionOnly = prev.filter(s => !serverIds.has(s.id));
+        return [...fromServer, ...inSessionOnly];
+      });
       return response;
     } catch (err) {
       setError(err.message || 'Failed to load history');
@@ -73,6 +80,12 @@ export const SummaryProvider = ({ children }) => {
     setCurrentSummary(null);
   };
 
+  const clearAll = () => {
+    setCurrentSummary(null);
+    setCurrentDocument(null);
+    setSummaries([]);
+  };
+
   const clearError = () => {
     setError(null);
   };
@@ -80,12 +93,15 @@ export const SummaryProvider = ({ children }) => {
   const value = {
     summaries,
     currentSummary,
+    currentDocument,
+    setCurrentDocument,
     loading,
     error,
     generateSummary,
     loadHistory,
     deleteSummary,
     clearCurrentSummary,
+    clearAll,
     clearError,
   };
 

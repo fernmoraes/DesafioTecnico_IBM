@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User as UserIcon, Mail, Calendar, FileText, LogOut } from 'lucide-react';
 import { useUser } from '../context/UserContext';
+import { useSummary } from '../context/SummaryContext';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import { formatDate } from '../utils/formatters';
@@ -9,9 +10,11 @@ import toast, { Toaster } from 'react-hot-toast';
 
 const ProfilePage = () => {
   const { user, createUser, updateUser, logout } = useUser();
+  const { clearAll } = useSummary();
   const navigate = useNavigate();
 
   const handleLogout = () => {
+    clearAll();
     logout();
     navigate('/login');
   };

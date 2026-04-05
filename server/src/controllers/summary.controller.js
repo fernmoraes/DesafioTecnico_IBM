@@ -1,7 +1,7 @@
 const storageService = require('../services/storage.service');
 const watsonxService = require('../services/watsonx.service');
-const { createResponse, createErrorResponse } = require('../utils/helpers');
-const { HTTP_STATUS, ERROR_CODES, SUMMARY_MODES } = require('../utils/constants');
+const { createResponse } = require('../utils/helpers');
+const { HTTP_STATUS, SUMMARY_MODES } = require('../utils/constants');
 
 /**
  * Summary Controller
@@ -100,17 +100,9 @@ const getUserSummaries = async (req, res, next) => {
   try {
     const { userId } = req.params;
 
-    // Validate user exists
-    const user = storageService.getUser(userId);
-    if (!user) {
-      const error = new Error('User not found');
-      error.name = 'NotFoundError';
-      return next(error);
-    }
+    const summaries = storageService.getUserSummaries(userId);
 
-    const summaries = storageService.getSummariesByUser(userId);
-
-    res.status(HTTP_STATUS.OK).json(createResponse(true, summaries));
+    res.status(HTTP_STATUS.OK).json(createResponse(true, { summaries }));
   } catch (error) {
     next(error);
   }
@@ -131,7 +123,7 @@ const getDocumentSummaries = async (req, res, next) => {
       return next(error);
     }
 
-    const summaries = storageService.getSummariesByDocument(documentId);
+    const summaries = storageService.getDocumentSummaries(documentId);
 
     res.status(HTTP_STATUS.OK).json(createResponse(true, summaries));
   } catch (error) {
@@ -166,7 +158,7 @@ const deleteSummary = async (req, res, next) => {
 /**
  * Gets available summary modes
  */
-const getSummaryModes = async (req, res, next) => {
+const getSummaryModes = async (_req, res, next) => {
   try {
     const modes = Object.entries(SUMMARY_MODES).map(([key, value]) => ({
       id: value,

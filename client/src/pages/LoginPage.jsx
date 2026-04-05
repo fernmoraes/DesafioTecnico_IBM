@@ -3,11 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { FileText } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { useUser } from '../context/UserContext';
+import { useSummary } from '../context/SummaryContext';
 import Button from '../components/common/Button';
 import Card from '../components/common/Card';
 
 const LoginPage = () => {
   const { login, createUser } = useUser();
+  const { clearAll } = useSummary();
   const navigate = useNavigate();
   const [tab, setTab] = useState('login');
   const [loading, setLoading] = useState(false);
@@ -22,6 +24,7 @@ const LoginPage = () => {
     }
     try {
       setLoading(true);
+      clearAll();
       await login(loginEmail);
       toast.success('Welcome back!');
       navigate('/');
@@ -40,6 +43,7 @@ const LoginPage = () => {
     }
     try {
       setLoading(true);
+      clearAll();
       await createUser(registerData.name, registerData.email);
       toast.success('Account created! Welcome!');
       navigate('/');

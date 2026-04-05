@@ -14,9 +14,8 @@ import { SUMMARY_MODES } from '../utils/constants';
 
 const HomePage = () => {
   const { user, createUser, refreshUser } = useUser();
-  const { currentSummary, loading, generateSummary } = useSummary();
+  const { currentSummary, currentDocument: document, setCurrentDocument: setDocument, loading, generateSummary } = useSummary();
   const [file, setFile] = useState(null);
-  const [document, setDocument] = useState(null);
   const [selectedMode, setSelectedMode] = useState(SUMMARY_MODES.TLDR);
   const [uploading, setUploading] = useState(false);
   const [showProfileForm, setShowProfileForm] = useState(false);
