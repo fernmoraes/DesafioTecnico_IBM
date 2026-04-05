@@ -42,8 +42,8 @@ export const updateUser = async (userId, updates) => {
  * @param {string} email - User email
  * @returns {Promise<Object>} - User object
  */
-export const loginUser = async (email) => {
-  const response = await api.post('/users/login', { email });
+export const loginUser = async (email, password) => {
+  const response = await api.post('/users/login', { email, password });
   return response.data;
 };
 

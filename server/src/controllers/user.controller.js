@@ -1,6 +1,6 @@
 const storageService = require('../services/storage.service');
-const { createResponse, createErrorResponse } = require('../utils/helpers');
-const { HTTP_STATUS, ERROR_CODES } = require('../utils/constants');
+const { createResponse } = require('../utils/helpers');
+const { HTTP_STATUS } = require('../utils/constants');
 
 /**
  * User Controller
@@ -12,10 +12,16 @@ const { HTTP_STATUS, ERROR_CODES } = require('../utils/constants');
  */
 const createUser = async (req, res, next) => {
   try {
-    const { name, email } = req.body;
+    const { name, email, password } = req.body;
 
-    // Create user
-    const user = storageService.createUser({ name, email });
+    const existing = storageService.getUserByEmail(email);
+    if (existing) {
+      const error = new Error('An account with this email already exists');
+      error.name = 'ValidationError';
+      return next(error);
+    }
+
+    const user = storageService.createUser({ name, email, password });
 
     res.status(HTTP_STATUS.CREATED).json(createResponse(true, user));
   } catch (error) {
@@ -83,23 +89,24 @@ const getAllUsers = async (req, res, next) => {
  */
 const loginUser = async (req, res, next) => {
   try {
-    const { email } = req.body;
+    const { email, password } = req.body;
 
-    if (!email) {
-      const error = new Error('Email is required');
+    if (!email || !password) {
+      const error = new Error('Email and password are required');
       error.name = 'ValidationError';
       return next(error);
     }
 
-    const user = storageService.getUserByEmail(email);
+    const userRaw = storageService.getUserByEmail(email);
 
-    if (!user) {
-      const error = new Error('No account found with this email');
-      error.name = 'NotFoundError';
+    if (!userRaw || !storageService.verifyPassword(userRaw, password)) {
+      const error = new Error('Invalid email or password');
+      error.name = 'ValidationError';
       return next(error);
     }
 
-    res.status(HTTP_STATUS.OK).json(createResponse(true, user));
+    const { passwordHash: _, ...safeUser } = userRaw;
+    res.status(HTTP_STATUS.OK).json(createResponse(true, safeUser));
   } catch (error) {
     next(error);
   }

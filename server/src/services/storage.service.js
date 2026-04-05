@@ -1,4 +1,5 @@
 const { v4: uuidv4 } = require('uuid');
+const bcrypt = require('bcryptjs');
 const { calculateCompressionRatio } = require('../utils/helpers');
 
 /**
@@ -22,24 +23,38 @@ class StorageService {
    * Creates a new user
    */
   createUser(data) {
+    const passwordHash = bcrypt.hashSync(data.password, 10);
     const user = {
       id: uuidv4(),
       name: data.name,
       email: data.email,
+      passwordHash,
       createdAt: new Date(),
       summaryCount: 0
     };
-    
+
     this.users.set(user.id, user);
     this.userSummaries.set(user.id, []);
-    
-    return user;
+
+    const { passwordHash: _, ...safeUser } = user;
+    return safeUser;
+  }
+
+  verifyPassword(user, password) {
+    return bcrypt.compareSync(password, user.passwordHash);
   }
 
   /**
    * Gets a user by ID
    */
   getUser(userId) {
+    const user = this.users.get(userId);
+    if (!user) return null;
+    const { passwordHash: _, ...safeUser } = user;
+    return safeUser;
+  }
+
+  getUserRaw(userId) {
     return this.users.get(userId);
   }
 
@@ -50,6 +65,7 @@ class StorageService {
     return Array.from(this.users.values()).find(
       (u) => u.email.toLowerCase() === email.toLowerCase()
     ) || null;
+    // Returns raw user (with passwordHash) for internal auth use
   }
 
   /**
@@ -58,11 +74,14 @@ class StorageService {
   updateUser(userId, updates) {
     const user = this.users.get(userId);
     if (!user) return null;
-    
-    const updatedUser = { ...user, ...updates };
+
+    const { password, passwordHash: _ph, ...safeUpdates } = updates;
+    const updatedUser = { ...user, ...safeUpdates };
+    if (password) updatedUser.passwordHash = bcrypt.hashSync(password, 10);
     this.users.set(userId, updatedUser);
-    
-    return updatedUser;
+
+    const { passwordHash: _, ...safeUser } = updatedUser;
+    return safeUser;
   }
 
   /**

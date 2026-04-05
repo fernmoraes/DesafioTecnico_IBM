@@ -54,11 +54,11 @@ export const UserProvider = ({ children }) => {
     }
   }, [user]);
 
-  const createUser = async (name, email) => {
+  const createUser = async (name, email, password) => {
     try {
       setLoading(true);
       setError(null);
-      const newUser = await createUserAPI({ name, email });
+      const newUser = await createUserAPI({ name, email, password });
       console.log('User created:', newUser);
       setUser(newUser);
       return newUser;
@@ -90,11 +90,11 @@ export const UserProvider = ({ children }) => {
     }
   };
 
-  const login = async (email) => {
+  const login = async (email, password) => {
     try {
       setLoading(true);
       setError(null);
-      const loggedUser = await loginUserAPI(email);
+      const loggedUser = await loginUserAPI(email, password);
       setUser(loggedUser);
       return loggedUser;
     } catch (err) {

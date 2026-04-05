@@ -7,21 +7,31 @@ const { isValidEmail } = require('../utils/helpers');
 /**
  * Validates user creation request
  */
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+
 const validateUserCreation = (req, res, next) => {
-  const { name, email } = req.body;
-  
-  if (!name || !email) {
-    const error = new Error('Name and email are required');
+  const { name, email, password } = req.body;
+
+  if (!name || !email || !password) {
+    const error = new Error('Name, email and password are required');
     error.name = 'ValidationError';
     return next(error);
   }
-  
+
   if (!isValidEmail(email)) {
     const error = new Error('Invalid email format');
     error.name = 'ValidationError';
     return next(error);
   }
-  
+
+  if (!PASSWORD_REGEX.test(password)) {
+    const error = new Error(
+      'Password must be at least 8 characters and include uppercase, lowercase, number and special character'
+    );
+    error.name = 'ValidationError';
+    return next(error);
+  }
+
   next();
 };
 
