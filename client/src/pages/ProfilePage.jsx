@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { User as UserIcon, Mail, Calendar, FileText } from 'lucide-react';
+import { User as UserIcon, Mail, Calendar, FileText, LogOut } from 'lucide-react';
 import { useUser } from '../context/UserContext';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
@@ -7,7 +7,7 @@ import { formatDate } from '../utils/formatters';
 import toast, { Toaster } from 'react-hot-toast';
 
 const ProfilePage = () => {
-  const { user, createUser, updateUser } = useUser();
+  const { user, createUser, updateUser, logout } = useUser();
   const [isEditing, setIsEditing] = useState(!user);
   const [formData, setFormData] = useState({
     name: user?.name || '',
@@ -135,9 +135,14 @@ const ProfilePage = () => {
               <h2 className="text-xl font-semibold text-gray-900">
                 Profile Information
               </h2>
-              <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
-                Edit Profile
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                  Edit Profile
+                </Button>
+                <Button variant="outline" size="sm" onClick={logout} icon={LogOut}>
+                  Logout
+                </Button>
+              </div>
             </div>
 
             <div className="space-y-4">

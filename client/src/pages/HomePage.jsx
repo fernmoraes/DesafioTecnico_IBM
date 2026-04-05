@@ -13,7 +13,7 @@ import { uploadDocument } from '../services/documentService';
 import { SUMMARY_MODES } from '../utils/constants';
 
 const HomePage = () => {
-  const { user, createUser } = useUser();
+  const { user, createUser, refreshUser } = useUser();
   const { currentSummary, loading, generateSummary } = useSummary();
   const [file, setFile] = useState(null);
   const [document, setDocument] = useState(null);
@@ -66,6 +66,7 @@ const HomePage = () => {
         documentId: document.id,
         mode: selectedMode,
       });
+      await refreshUser();
       toast.success('Summary generated successfully!');
     } catch (error) {
       toast.error(error.message || 'Failed to generate summary');

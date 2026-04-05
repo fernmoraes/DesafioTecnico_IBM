@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { createUser as createUserAPI, getUser as getUserAPI, updateUser as updateUserAPI } from '../services/userService';
+
 import { STORAGE_KEYS } from '../utils/constants';
 
 const UserContext = createContext();
@@ -89,6 +90,16 @@ export const UserProvider = ({ children }) => {
     }
   };
 
+  const refreshUser = async () => {
+    if (!user?.id) return;
+    try {
+      const freshUser = await getUserAPI(user.id);
+      setUser(freshUser);
+    } catch (err) {
+      console.error('Error refreshing user:', err);
+    }
+  };
+
   const logout = () => {
     setUser(null);
     localStorage.removeItem(STORAGE_KEYS.USER);
@@ -100,6 +111,7 @@ export const UserProvider = ({ children }) => {
     error,
     createUser,
     updateUser,
+    refreshUser,
     logout,
     isAuthenticated: !!user,
   };

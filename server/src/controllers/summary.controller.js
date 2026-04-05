@@ -13,7 +13,7 @@ const { HTTP_STATUS, ERROR_CODES, SUMMARY_MODES } = require('../utils/constants'
  */
 const generateSummary = async (req, res, next) => {
   try {
-    const { documentId, mode } = req.body;
+    const { documentId, mode, userId } = req.body;
 
     // Validate required fields
     if (!documentId || !mode) {
@@ -56,7 +56,7 @@ const generateSummary = async (req, res, next) => {
 
     // Create summary record
     const summary = storageService.createSummary({
-      userId: null,
+      userId: userId || null,
       documentId,
       mode,
       summaryText,
