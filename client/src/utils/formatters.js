@@ -50,6 +50,7 @@ export const formatNumber = (num) => {
  * @returns {string} - Formatted time string
  */
 export const formatProcessingTime = (milliseconds) => {
+  if (!milliseconds && milliseconds !== 0) return 'N/A';
   if (milliseconds < 1000) {
     return `${milliseconds}ms`;
   }
