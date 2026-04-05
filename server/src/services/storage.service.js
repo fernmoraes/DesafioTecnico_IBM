@@ -44,6 +44,15 @@ class StorageService {
   }
 
   /**
+   * Gets a user by email
+   */
+  getUserByEmail(email) {
+    return Array.from(this.users.values()).find(
+      (u) => u.email.toLowerCase() === email.toLowerCase()
+    ) || null;
+  }
+
+  /**
    * Updates a user
    */
   updateUser(userId, updates) {

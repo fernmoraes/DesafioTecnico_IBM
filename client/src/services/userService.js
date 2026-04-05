@@ -37,4 +37,14 @@ export const updateUser = async (userId, updates) => {
   return response.data;
 };
 
+/**
+ * Logs in a user by email
+ * @param {string} email - User email
+ * @returns {Promise<Object>} - User object
+ */
+export const loginUser = async (email) => {
+  const response = await api.post('/users/login', { email });
+  return response.data;
+};
+
 // Made with Bob

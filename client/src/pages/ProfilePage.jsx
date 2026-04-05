@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { User as UserIcon, Mail, Calendar, FileText, LogOut } from 'lucide-react';
 import { useUser } from '../context/UserContext';
 import Card from '../components/common/Card';
@@ -8,6 +9,12 @@ import toast, { Toaster } from 'react-hot-toast';
 
 const ProfilePage = () => {
   const { user, createUser, updateUser, logout } = useUser();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
   const [isEditing, setIsEditing] = useState(!user);
   const [formData, setFormData] = useState({
     name: user?.name || '',
@@ -139,7 +146,7 @@ const ProfilePage = () => {
                 <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
                   Edit Profile
                 </Button>
-                <Button variant="outline" size="sm" onClick={logout} icon={LogOut}>
+                <Button variant="outline" size="sm" onClick={handleLogout} icon={LogOut}>
                   Logout
                 </Button>
               </div>

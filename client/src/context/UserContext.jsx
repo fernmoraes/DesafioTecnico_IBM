@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { createUser as createUserAPI, getUser as getUserAPI, updateUser as updateUserAPI } from '../services/userService';
+import { createUser as createUserAPI, loginUser as loginUserAPI, getUser as getUserAPI, updateUser as updateUserAPI } from '../services/userService';
 
 import { STORAGE_KEYS } from '../utils/constants';
 
@@ -90,6 +90,21 @@ export const UserProvider = ({ children }) => {
     }
   };
 
+  const login = async (email) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const loggedUser = await loginUserAPI(email);
+      setUser(loggedUser);
+      return loggedUser;
+    } catch (err) {
+      setError(err.message || 'Failed to login');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const refreshUser = async () => {
     if (!user?.id) return;
     try {
@@ -110,6 +125,7 @@ export const UserProvider = ({ children }) => {
     loading,
     error,
     createUser,
+    login,
     updateUser,
     refreshUser,
     logout,

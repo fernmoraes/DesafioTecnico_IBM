@@ -20,6 +20,13 @@ router.post(
 );
 
 /**
+ * @route   POST /api/users/login
+ * @desc    Login with email
+ * @access  Public
+ */
+router.post('/login', userController.loginUser);
+
+/**
  * @route   GET /api/users/:userId
  * @desc    Get a user by ID
  * @access  Public

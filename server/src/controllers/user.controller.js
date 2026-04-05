@@ -78,8 +78,36 @@ const getAllUsers = async (req, res, next) => {
   }
 };
 
+/**
+ * Logs in a user by email
+ */
+const loginUser = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      const error = new Error('Email is required');
+      error.name = 'ValidationError';
+      return next(error);
+    }
+
+    const user = storageService.getUserByEmail(email);
+
+    if (!user) {
+      const error = new Error('No account found with this email');
+      error.name = 'NotFoundError';
+      return next(error);
+    }
+
+    res.status(HTTP_STATUS.OK).json(createResponse(true, user));
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createUser,
+  loginUser,
   getUser,
   updateUser,
   getAllUsers
