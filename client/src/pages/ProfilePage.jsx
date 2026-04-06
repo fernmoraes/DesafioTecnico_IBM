@@ -1,200 +1,193 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User as UserIcon, Mail, Calendar, FileText, LogOut } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { UserAvatar, Email, Calendar, Document, Logout, Edit } from '@carbon/icons-react';
+import { Button, TextInput } from '@carbon/react';
 import { useUser } from '../context/UserContext';
 import { useSummary } from '../context/SummaryContext';
-import Card from '../components/common/Card';
-import Button from '../components/common/Button';
 import { formatDate } from '../utils/formatters';
 import toast, { Toaster } from 'react-hot-toast';
 
+const PAGE_MAX = '1312px';
+const PAGE_PX  = 'clamp(1rem, 5vw, 5rem)';
+
+const ProfileRow = ({ label, value, onEdit, t }) => (
+  <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr auto', alignItems: 'center', gap: '1rem', padding: '1.25rem 0', borderBottom: '1px solid var(--ibm-gray-20)' }}>
+    <p style={{ fontSize: '0.875rem', color: 'var(--ibm-gray-70)', margin: 0 }}>{label}</p>
+    <p style={{ fontSize: '0.875rem', color: 'var(--ibm-gray-100)', margin: 0 }}>{value || '—'}</p>
+    {onEdit && (
+      <button onClick={onEdit} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ibm-blue)', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.375rem', padding: 0, whiteSpace: 'nowrap' }}>
+        <Edit size={14} /> {t('profile.edit')}
+      </button>
+    )}
+  </div>
+);
+
 const ProfilePage = () => {
+  const { t } = useTranslation();
   const { user, createUser, updateUser, logout } = useUser();
   const { clearAll } = useSummary();
   const navigate = useNavigate();
-
-  const handleLogout = () => {
-    clearAll();
-    logout();
-    navigate('/login');
-  };
+  const [activeSection, setActiveSection] = useState('account');
   const [isEditing, setIsEditing] = useState(!user);
-  const [formData, setFormData] = useState({
-    name: user?.name || '',
-    email: user?.email || '',
-  });
+  const [formData, setFormData] = useState({ name: user?.name || '', email: user?.email || '' });
+  const [loading, setLoading] = useState(false);
+
+  const handleLogout = () => { clearAll(); logout(); navigate('/login'); };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!formData.name || !formData.email) {
-      toast.error('Please fill in all fields');
-      return;
-    }
-
+    if (!formData.name || !formData.email) { toast.error(t('errors.fillAllFields')); return; }
     try {
-      if (user) {
-        await updateUser(formData);
-        toast.success('Profile updated successfully!');
-      } else {
-        await createUser(formData.name, formData.email);
-        toast.success('Profile created successfully!');
-      }
+      setLoading(true);
+      if (user) { await updateUser(formData); toast.success(t('success.profileUpdated')); }
+      else { await createUser(formData.name, formData.email); toast.success(t('success.profileCreated')); }
       setIsEditing(false);
-    } catch (error) {
-      toast.error(error.message || 'Failed to save profile');
-    }
+    } catch (err) { toast.error(err.message || t('errors.profileSaveFailed')); }
+    finally { setLoading(false); }
   };
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
+  const navItems = [
+    { id: 'account', label: t('profile.tabAccount') },
+    { id: 'usage',   label: t('profile.tabUsage')   },
+    { id: 'session', label: t('profile.tabSession')  },
+  ];
 
   if (!user && !isEditing) {
     return (
-      <Card className="max-w-2xl mx-auto text-center py-12">
+      <div style={{ maxWidth: PAGE_MAX, margin: '0 auto', padding: `5rem ${PAGE_PX}`, textAlign: 'center' }}>
         <Toaster position="top-right" />
-        <UserIcon className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-        <h2 className="text-2xl font-semibold text-gray-900 mb-2">
-          Create Your Profile
-        </h2>
-        <p className="text-gray-600 mb-6">
-          Get started by creating your profile to use the AI Summarizer
-        </p>
-        <Button onClick={() => setIsEditing(true)} size="lg">
-          Create Profile
-        </Button>
-      </Card>
+        <UserAvatar size={64} style={{ color: 'var(--ibm-gray-30)', marginBottom: '1.5rem' }} />
+        <h2 style={{ fontFamily: 'IBM Plex Sans', fontWeight: 600, fontSize: '1.75rem', color: 'var(--ibm-gray-100)', marginBottom: '0.75rem' }}>{t('profile.noUserTitle')}</h2>
+        <p style={{ color: 'var(--ibm-gray-60)', marginBottom: '2rem' }}>{t('profile.noUserDesc')}</p>
+        <Button size="lg" onClick={() => setIsEditing(true)}>{t('profile.createProfileBtn')}</Button>
+      </div>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div style={{ backgroundColor: 'var(--ibm-white)' }}>
       <Toaster position="top-right" />
-      
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Your Profile
-        </h1>
-        <p className="text-gray-600">
-          Manage your account information
-        </p>
-      </div>
 
-      {isEditing ? (
-        <Card>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                Name
-              </label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                placeholder="Enter your name"
-                required
-              />
-            </div>
+      {/* Page header */}
+      <section style={{ borderBottom: '1px solid var(--ibm-gray-20)' }}>
+        <div style={{ maxWidth: PAGE_MAX, margin: '0 auto', padding: `3rem ${PAGE_PX} 0` }}>
+          <h1 style={{ fontFamily: 'IBM Plex Sans', fontWeight: 300, fontSize: 'clamp(1.75rem, 3vw, 2.625rem)', color: 'var(--ibm-gray-100)', marginBottom: '2rem' }}>
+            {t('profile.pageTitle')}
+          </h1>
+          <div style={{ display: 'flex', gap: 0 }}>
+            {navItems.map((item) => (
+              <button key={item.id} onClick={() => { setActiveSection(item.id); setIsEditing(false); }}
+                style={{ background: 'none', border: 'none', borderBottom: activeSection === item.id ? '3px solid var(--ibm-blue)' : '3px solid transparent', padding: '0.75rem 1.5rem', cursor: 'pointer', fontSize: '0.875rem', fontWeight: activeSection === item.id ? 600 : 400, color: activeSection === item.id ? 'var(--ibm-blue)' : 'var(--ibm-gray-70)', transition: 'color 0.15s' }}>
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
 
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email
-              </label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                placeholder="Enter your email"
-                required
-              />
-            </div>
+      {/* Body */}
+      <section style={{ backgroundColor: 'var(--ibm-gray-10)', minHeight: '60vh' }}>
+        <div style={{ maxWidth: PAGE_MAX, margin: '0 auto', padding: `0 ${PAGE_PX}`, display: 'grid', minHeight: '60vh' }} className="profile-layout">
+          {/* Sidebar */}
+          <aside style={{ borderRight: '1px solid var(--ibm-gray-20)', backgroundColor: 'var(--ibm-white)', padding: '2rem 0' }}>
+            <p style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--ibm-gray-50)', padding: '0 1.5rem', marginBottom: '0.75rem' }}>
+              {t('profile.sectionLabel')}
+            </p>
+            {navItems.map((item) => (
+              <button key={item.id} onClick={() => { setActiveSection(item.id); setIsEditing(false); }}
+                style={{ display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none', borderLeft: activeSection === item.id ? '4px solid var(--ibm-blue)' : '4px solid transparent', padding: '0.75rem 1.5rem', cursor: 'pointer', fontSize: '0.875rem', fontWeight: activeSection === item.id ? 600 : 400, color: activeSection === item.id ? 'var(--ibm-gray-100)' : 'var(--ibm-gray-70)', backgroundColor: activeSection === item.id ? 'var(--ibm-gray-10)' : 'transparent', transition: 'all 0.15s' }}>
+                {item.label}
+              </button>
+            ))}
+          </aside>
 
-            <div className="flex gap-4">
-              <Button type="submit" className="flex-1">
-                {user ? 'Update Profile' : 'Create Profile'}
-              </Button>
-              {user && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setIsEditing(false);
-                    setFormData({ name: user.name, email: user.email });
-                  }}
-                >
-                  Cancel
-                </Button>
-              )}
-            </div>
-          </form>
-        </Card>
-      ) : (
-        <>
-          <Card>
-            <div className="flex items-start justify-between mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">
-                Profile Information
-              </h2>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
-                  Edit Profile
-                </Button>
-                <Button variant="outline" size="sm" onClick={handleLogout} icon={LogOut}>
-                  Logout
-                </Button>
-              </div>
-            </div>
+          {/* Main */}
+          <main style={{ backgroundColor: 'var(--ibm-white)', padding: '2.5rem 3rem' }}>
 
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <UserIcon className="w-5 h-5 text-gray-400" />
-                <div>
-                  <p className="text-sm text-gray-600">Name</p>
-                  <p className="font-medium text-gray-900">{user.name}</p>
+            {/* Account */}
+            {activeSection === 'account' && (
+              isEditing ? (
+                <>
+                  <h2 style={{ fontFamily: 'IBM Plex Sans', fontWeight: 600, fontSize: '1.25rem', color: 'var(--ibm-gray-100)', margin: '0 0 2rem' }}>
+                    {user ? t('profile.editTitle') : t('profile.createTitle')}
+                  </h2>
+                  <form onSubmit={handleSubmit} style={{ maxWidth: '28rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                    <TextInput id="p-name" labelText={t('profile.nameLabel')} value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      placeholder={t('profile.namePlaceholder')} required disabled={loading} />
+                    <TextInput id="p-email" labelText={t('profile.emailLabel')} type="email" value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      placeholder={t('profile.emailPlaceholder')} required disabled={loading} />
+                    <div style={{ display: 'flex', gap: '1px', marginTop: '0.5rem' }}>
+                      <Button type="submit" disabled={loading} size="lg">
+                        {loading ? t('profile.saving') : user ? t('profile.saveChanges') : t('profile.createProfileBtn')}
+                      </Button>
+                      {user && (
+                        <Button kind="ghost" size="lg" disabled={loading}
+                          onClick={() => { setIsEditing(false); setFormData({ name: user.name, email: user.email }); }}>
+                          {t('profile.cancel')}
+                        </Button>
+                      )}
+                    </div>
+                  </form>
+                </>
+              ) : (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '1.25rem', borderBottom: '1px solid var(--ibm-gray-20)' }}>
+                    <h2 style={{ fontFamily: 'IBM Plex Sans', fontWeight: 600, fontSize: '1.25rem', color: 'var(--ibm-gray-100)', margin: 0 }}>{t('profile.contactInfo')}</h2>
+                  </div>
+                  {user && (
+                    <>
+                      <ProfileRow label={t('profile.rowName')}   value={user.name}              onEdit={() => setIsEditing(true)} t={t} />
+                      <ProfileRow label={t('profile.rowEmail')}  value={user.email}             onEdit={() => setIsEditing(true)} t={t} />
+                      {user.createdAt && <ProfileRow label={t('profile.rowMember')} value={formatDate(user.createdAt)} t={t} />}
+                    </>
+                  )}
+                </>
+              )
+            )}
+
+            {/* Usage */}
+            {activeSection === 'usage' && (
+              <>
+                <div style={{ paddingBottom: '1.25rem', borderBottom: '1px solid var(--ibm-gray-20)' }}>
+                  <h2 style={{ fontFamily: 'IBM Plex Sans', fontWeight: 600, fontSize: '1.25rem', color: 'var(--ibm-gray-100)', margin: 0 }}>{t('profile.usageTitle')}</h2>
                 </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <Mail className="w-5 h-5 text-gray-400" />
-                <div>
-                  <p className="text-sm text-gray-600">Email</p>
-                  <p className="font-medium text-gray-900">{user.email}</p>
+                <ProfileRow label={t('profile.usagePlan')}  value={t('profile.usageFreeTier')} t={t} />
+                <ProfileRow label={t('profile.usageCount')} value={String(user?.summaryCount || 0)} t={t} />
+                <div style={{ marginTop: '2.5rem', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1px', backgroundColor: 'var(--ibm-gray-20)' }}>
+                  {[
+                    { label: t('profile.statsGenerated'), value: user?.summaryCount || 0, color: 'var(--ibm-blue)' },
+                    { label: t('profile.statsPlan'),      value: t('profile.statsFree'),   color: 'var(--ibm-gray-100)' },
+                  ].map((stat) => (
+                    <div key={stat.label} style={{ backgroundColor: 'var(--ibm-gray-10)', padding: '1.5rem', borderLeft: '2px solid var(--ibm-blue)' }}>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--ibm-gray-60)', margin: '0 0 0.5rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{stat.label}</p>
+                      <p style={{ fontSize: '2rem', fontWeight: 700, color: stat.color, margin: 0, fontFamily: 'IBM Plex Sans' }}>{stat.value}</p>
+                    </div>
+                  ))}
                 </div>
-              </div>
+              </>
+            )}
 
-              <div className="flex items-center gap-3">
-                <Calendar className="w-5 h-5 text-gray-400" />
-                <div>
-                  <p className="text-sm text-gray-600">Member Since</p>
-                  <p className="font-medium text-gray-900">{formatDate(user.createdAt)}</p>
+            {/* Session */}
+            {activeSection === 'session' && (
+              <>
+                <div style={{ paddingBottom: '1.25rem', borderBottom: '1px solid var(--ibm-gray-20)' }}>
+                  <h2 style={{ fontFamily: 'IBM Plex Sans', fontWeight: 600, fontSize: '1.25rem', color: 'var(--ibm-gray-100)', margin: 0 }}>{t('profile.sessionTitle')}</h2>
                 </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <FileText className="w-5 h-5 text-gray-400" />
-                <div>
-                  <p className="text-sm text-gray-600">Total Summaries</p>
-                  <p className="font-medium text-gray-900">{user.summaryCount || 0}</p>
+                <div style={{ padding: '2rem 0', borderBottom: '1px solid var(--ibm-gray-20)' }}>
+                  <p style={{ fontSize: '0.875rem', color: 'var(--ibm-gray-70)', marginBottom: '1rem' }}
+                    dangerouslySetInnerHTML={{ __html: t('profile.sessionText', { email: user?.email || '' }) }} />
+                  <Button kind="danger--ghost" renderIcon={Logout} onClick={handleLogout}>{t('profile.signOut')}</Button>
                 </div>
-              </div>
-            </div>
-          </Card>
-        </>
-      )}
+              </>
+            )}
+          </main>
+        </div>
+      </section>
     </div>
   );
 };
 
 export default ProfilePage;
-
-// Made with Bob

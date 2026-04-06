@@ -1,20 +1,34 @@
 import { useState } from 'react';
-import { Sparkles, User } from 'lucide-react';
+import ibmBg from '../assets/ibmbgimg.png';
+import { useTranslation } from 'react-i18next';
+import { ArrowRight, DocumentMultiple_01, List, LightFilled, Education } from '@carbon/icons-react';
 import toast, { Toaster } from 'react-hot-toast';
+import { Button, TextInput, Loading } from '@carbon/react';
 import FileUpload from '../components/upload/FileUpload';
 import SummaryModeSelector from '../components/summary/SummaryModeSelector';
 import SummaryDisplay from '../components/summary/SummaryDisplay';
-import LoadingSpinner from '../components/common/LoadingSpinner';
-import Button from '../components/common/Button';
-import Card from '../components/common/Card';
 import { useSummary } from '../context/SummaryContext';
 import { useUser } from '../context/UserContext';
 import { uploadDocument } from '../services/documentService';
 import { SUMMARY_MODES } from '../utils/constants';
 
+const PAGE_MAX = '1312px';
+const PAGE_PX  = 'clamp(1rem, 5vw, 5rem)';
+const SEC_PY   = '5rem';
+
+const StepBadge = ({ n, done }) => (
+  <span style={{
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    width: '2rem', height: '2rem',
+    backgroundColor: done ? '#24a148' : 'var(--ibm-blue)',
+    color: 'var(--ibm-white)', fontSize: '0.875rem', fontWeight: 600, flexShrink: 0,
+  }}>{n}</span>
+);
+
 const HomePage = () => {
+  const { t } = useTranslation();
   const { user, createUser, refreshUser } = useUser();
-  const { currentSummary, currentDocument: document, setCurrentDocument: setDocument, loading, generateSummary } = useSummary();
+  const { currentSummary, currentDocument: uploadedDoc, setCurrentDocument: setDocument, loading, generateSummary } = useSummary();
   const [file, setFile] = useState(null);
   const [selectedMode, setSelectedMode] = useState(SUMMARY_MODES.TLDR);
   const [uploading, setUploading] = useState(false);
@@ -25,269 +39,238 @@ const HomePage = () => {
   const handleFileSelect = async (selectedFile) => {
     setFile(selectedFile);
     setDocument(null);
-
     if (!selectedFile) return;
-
-    // Check if user exists
-    if (!user) {
-      toast.error('Please create a profile first');
-      setFile(null);
-      return;
-    }
-
+    if (!user) { toast.error(t('errors.profileRequired')); setFile(null); return; }
     try {
       setUploading(true);
-      const uploadedDoc = await uploadDocument(selectedFile, user.id);
-      setDocument(uploadedDoc);
-      toast.success('Document uploaded successfully!');
-    } catch (error) {
-      toast.error(error.message || 'Failed to upload document');
+      const doc = await uploadDocument(selectedFile, user.id);
+      setDocument(doc);
+      toast.success(t('success.documentUploaded'));
+    } catch (err) {
+      toast.error(err.message || t('errors.uploadFailed'));
       setFile(null);
-    } finally {
-      setUploading(false);
-    }
+    } finally { setUploading(false); }
   };
 
   const handleGenerateSummary = async () => {
-    if (!user) {
-      toast.error('Please create a profile first');
-      return;
-    }
-
-    if (!document || !selectedMode) {
-      toast.error('Please upload a document and select a summary mode');
-      return;
-    }
-
+    if (!user) { toast.error(t('errors.profileRequired')); return; }
+    if (!uploadedDoc || !selectedMode) { toast.error(t('errors.selectDocAndMode')); return; }
     try {
-      await generateSummary({
-        userId: user.id,
-        documentId: document.id,
-        mode: selectedMode,
-      });
+      await generateSummary({ userId: user.id, documentId: uploadedDoc.id, mode: selectedMode });
       await refreshUser();
-      toast.success('Summary generated successfully!');
-    } catch (error) {
-      toast.error(error.message || 'Failed to generate summary');
-    }
+      toast.success(t('success.summaryGenerated'));
+    } catch (err) { toast.error(err.message || t('errors.summaryFailed')); }
   };
 
-  const handleReset = () => {
-    setFile(null);
-    setDocument(null);
-  };
+  const handleReset = () => { setFile(null); setDocument(null); };
 
   const handleCreateProfile = async (e) => {
     e.preventDefault();
-    
-    if (!profileData.name || !profileData.email) {
-      toast.error('Please fill in all fields');
-      return;
-    }
-
+    if (!profileData.name || !profileData.email) { toast.error(t('errors.fillAllFields')); return; }
     try {
       setCreatingProfile(true);
       await createUser(profileData.name, profileData.email);
-      toast.success('Profile created successfully!');
+      toast.success(t('success.profileCreated'));
       setShowProfileForm(false);
       setProfileData({ name: '', email: '' });
-    } catch (error) {
-      toast.error(error.message || 'Failed to create profile');
-    } finally {
-      setCreatingProfile(false);
-    }
+    } catch (err) { toast.error(err.message || t('errors.profileCreateFailed')); }
+    finally { setCreatingProfile(false); }
   };
 
   return (
-    <div className="space-y-8">
+    <div style={{ backgroundColor: 'var(--ibm-white)' }}>
       <Toaster position="top-right" />
 
-      {/* Header */}
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">
-          AI Document Summarizer
-        </h1>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          Upload your document and get intelligent summaries in multiple formats.
-          Powered by IBM Granite AI.
-        </p>
-      </div>
-
-      {/* Profile Creation Section */}
-      {!user && (
-        <Card className="bg-primary-50 border-primary-200">
-          <div className="flex items-start gap-4">
-            <div className="flex-shrink-0">
-              <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
-                <User className="w-6 h-6 text-primary-600" />
-              </div>
+      {/* ── HERO ── */}
+      <section style={{ borderBottom: '1px solid var(--ibm-gray-20)' }}>
+        <div style={{ maxWidth: PAGE_MAX, margin: '0 auto', padding: `${SEC_PY} ${PAGE_PX}`, display: 'grid', gap: '4rem', alignItems: 'center' }} className="hero-grid">
+          <div>
+            <p style={{ fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--ibm-blue)', marginBottom: '1.25rem' }}>
+              {t('home.heroBadge')}
+            </p>
+            <h1 style={{ fontFamily: 'IBM Plex Sans', fontWeight: 300, fontSize: 'clamp(2.25rem, 4vw, 3.375rem)', lineHeight: 1.19, color: 'var(--ibm-gray-100)', marginBottom: '1.5rem' }}>
+              {t('home.heroTitle')}<br />
+              <span style={{ color: 'var(--ibm-blue)', fontWeight: 600 }}>{t('home.heroAccent')}</span>
+            </h1>
+            <p style={{ fontSize: '1rem', lineHeight: 1.75, color: 'var(--ibm-gray-70)', marginBottom: '2.5rem', maxWidth: '34rem' }}>
+              {t('home.heroDesc')}
+            </p>
+            <div style={{ display: 'flex', gap: '1px', flexWrap: 'wrap' }}>
+              <Button renderIcon={ArrowRight} size="lg"
+                onClick={() => window.document.getElementById('upload-section')?.scrollIntoView({ behavior: 'smooth' })}>
+                {t('home.heroBtn')}
+              </Button>
+              <Button kind="tertiary" size="lg" href="https://www.ibm.com/watsonx" target="_blank" rel="noopener noreferrer">
+                {t('home.heroLearn')}
+              </Button>
             </div>
-            <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Create Your Profile First
-              </h3>
-              <p className="text-gray-600 mb-4">
-                To use the AI Document Summarizer, please create a quick profile. This helps us save your summaries and provide a personalized experience.
-              </p>
-              
-              {!showProfileForm ? (
-                <Button
-                  onClick={() => setShowProfileForm(true)}
-                  icon={User}
-                  size="lg"
-                >
-                  Create Profile
+          </div>
+          <div style={{ backgroundColor: 'var(--ibm-blue)', minHeight: '360px', overflow: 'hidden' }}>
+            <img
+              src={ibmBg}
+              alt="IBM eye bee M brand mark"
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', minHeight: '360px' }}
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* ── PROFILE BANNER ── */}
+      {!user && (
+        <section style={{ backgroundColor: '#edf5ff', borderBottom: '1px solid #d0e2ff' }}>
+          <div style={{ maxWidth: PAGE_MAX, margin: '0 auto', padding: `2rem ${PAGE_PX}` }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '2rem', flexWrap: 'wrap' }}>
+              <div>
+                <p style={{ fontWeight: 600, color: 'var(--ibm-gray-100)', marginBottom: '0.25rem' }}>{t('home.profileBannerTitle')}</p>
+                <p style={{ fontSize: '0.875rem', color: 'var(--ibm-gray-70)' }}>{t('home.profileBannerDesc')}</p>
+              </div>
+              {!showProfileForm && (
+                <Button size="md" onClick={() => setShowProfileForm(true)} style={{ flexShrink: 0 }}>
+                  {t('profile.createProfileBtn')}
                 </Button>
-              ) : (
-                <form onSubmit={handleCreateProfile} className="space-y-4">
-                  <div>
-                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                      Name
-                    </label>
-                    <input
-                      type="text"
-                      id="name"
-                      value={profileData.name}
-                      onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                      placeholder="Enter your name"
-                      required
-                      disabled={creatingProfile}
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      id="email"
-                      value={profileData.email}
-                      onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                      placeholder="Enter your email"
-                      required
-                      disabled={creatingProfile}
-                    />
-                  </div>
-                  <div className="flex gap-3">
-                    <Button
-                      type="submit"
-                      loading={creatingProfile}
-                      disabled={creatingProfile}
-                      size="lg"
-                    >
-                      Create Profile
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        setShowProfileForm(false);
-                        setProfileData({ name: '', email: '' });
-                      }}
-                      disabled={creatingProfile}
-                      size="lg"
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </form>
               )}
             </div>
+            {showProfileForm && (
+              <div style={{ marginTop: '1.5rem', maxWidth: '30rem' }}>
+                <form onSubmit={handleCreateProfile} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <TextInput id="profile-name" labelText={t('profile.nameLabel')} placeholder={t('profile.namePlaceholder')}
+                    value={profileData.name} onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+                    required disabled={creatingProfile} />
+                  <TextInput id="profile-email" labelText={t('profile.emailLabel')} type="email" placeholder={t('profile.emailPlaceholder')}
+                    value={profileData.email} onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                    required disabled={creatingProfile} />
+                  <div style={{ display: 'flex', gap: '1px', marginTop: '0.5rem' }}>
+                    <Button type="submit" disabled={creatingProfile} size="md">
+                      {creatingProfile ? t('profile.saving') : t('profile.createProfileBtn')}
+                    </Button>
+                    <Button kind="ghost" onClick={() => { setShowProfileForm(false); setProfileData({ name: '', email: '' }); }}
+                      disabled={creatingProfile} size="md">{t('profile.cancel')}</Button>
+                  </div>
+                </form>
+              </div>
+            )}
           </div>
-        </Card>
+        </section>
       )}
 
-      {/* Upload Section */}
-      <Card>
-        <h2 className="text-2xl font-semibold text-gray-900 mb-6">
-          1. Upload Your Document
-        </h2>
-        <FileUpload
-          onFileSelect={handleFileSelect}
-          disabled={uploading || loading}
-        />
-        {uploading && (
-          <div className="mt-4">
-            <LoadingSpinner text="Uploading and processing document..." />
+      {/* ── STEP 1 ── */}
+      <section id="upload-section" style={{ borderBottom: '1px solid var(--ibm-gray-20)' }}>
+        <div style={{ maxWidth: PAGE_MAX, margin: '0 auto', padding: `${SEC_PY} ${PAGE_PX}` }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
+            <StepBadge n="1" />
+            <div>
+              <h2 style={{ fontFamily: 'IBM Plex Sans', fontWeight: 600, fontSize: '1.75rem', color: 'var(--ibm-gray-100)', margin: 0 }}>{t('home.step1Title')}</h2>
+              <p style={{ fontSize: '0.875rem', color: 'var(--ibm-gray-60)', margin: '0.25rem 0 0' }}>{t('home.step1Desc')}</p>
+            </div>
           </div>
-        )}
-      </Card>
+          <FileUpload onFileSelect={handleFileSelect} disabled={uploading || loading} />
+          {uploading && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '1.5rem' }}>
+              <Loading small withOverlay={false} />
+              <span style={{ fontSize: '0.875rem', color: 'var(--ibm-gray-70)' }}>{t('home.step1Desc')}</span>
+            </div>
+          )}
+        </div>
+      </section>
 
-      {/* Mode Selection */}
-      {document && (
-        <Card>
-          <h2 className="text-2xl font-semibold text-gray-900 mb-6">
-            2. Select Summary Type
-          </h2>
-          <SummaryModeSelector
-            selectedMode={selectedMode}
-            onModeChange={setSelectedMode}
-            disabled={loading}
-          />
-          <div className="mt-6 flex gap-4">
-            <Button
-              onClick={handleGenerateSummary}
-              disabled={loading || !selectedMode}
-              loading={loading}
-              icon={Sparkles}
-              size="lg"
-              className="flex-1"
-            >
-              Generate Summary
-            </Button>
-            <Button
-              onClick={handleReset}
-              variant="outline"
-              disabled={loading}
-              size="lg"
-            >
-              Upload New Document
-            </Button>
+      {/* ── STEP 2 ── */}
+      {uploadedDoc && (
+        <section style={{ backgroundColor: 'var(--ibm-gray-10)', borderBottom: '1px solid var(--ibm-gray-20)' }}>
+          <div style={{ maxWidth: PAGE_MAX, margin: '0 auto', padding: `${SEC_PY} ${PAGE_PX}` }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
+              <StepBadge n="2" />
+              <div>
+                <h2 style={{ fontFamily: 'IBM Plex Sans', fontWeight: 600, fontSize: '1.75rem', color: 'var(--ibm-gray-100)', margin: 0 }}>{t('home.step2Title')}</h2>
+                <p style={{ fontSize: '0.875rem', color: 'var(--ibm-gray-60)', margin: '0.25rem 0 0' }}>{t('home.step2Desc')}</p>
+              </div>
+            </div>
+            <SummaryModeSelector selectedMode={selectedMode} onModeChange={setSelectedMode} disabled={loading} />
+            <div style={{ display: 'flex', gap: '1px', marginTop: '2.5rem' }}>
+              <Button renderIcon={ArrowRight} onClick={handleGenerateSummary} disabled={loading || !selectedMode} size="lg">
+                {loading ? t('home.generatingBtn') : t('home.generateBtn')}
+              </Button>
+              <Button kind="secondary" onClick={handleReset} disabled={loading} size="lg">{t('home.uploadNewBtn')}</Button>
+            </div>
           </div>
-        </Card>
+        </section>
       )}
 
-      {/* Loading State */}
+      {/* ── LOADING ── */}
       {loading && (
-        <Card>
-          <LoadingSpinner size="lg" text="Generating your summary..." />
-          <p className="text-center text-sm text-gray-500 mt-4">
-            This may take a few seconds
-          </p>
-        </Card>
-      )}
-
-      {/* Summary Display */}
-      {currentSummary && !loading && (
-        <Card>
-          <h2 className="text-2xl font-semibold text-gray-900 mb-6">
-            3. Your Summary
-          </h2>
-          <SummaryDisplay summary={currentSummary} />
-        </Card>
-      )}
-
-      {/* Empty State */}
-      {!file && !document && !currentSummary && (
-        <Card className="text-center py-12">
-          <div className="max-w-md mx-auto">
-            <Sparkles className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              Ready to Get Started?
-            </h3>
-            <p className="text-gray-600">
-              Upload a PDF or text document to generate intelligent summaries
-              in multiple formats.
-            </p>
+        <section style={{ borderBottom: '1px solid var(--ibm-gray-20)' }}>
+          <div style={{ maxWidth: PAGE_MAX, margin: '0 auto', padding: `${SEC_PY} ${PAGE_PX}`, textAlign: 'center' }}>
+            <Loading active withOverlay={false} description={t('home.loadingDesc')} />
+            <p style={{ marginTop: '1.5rem', fontSize: '0.875rem', color: 'var(--ibm-gray-60)' }}>{t('home.loadingHint')}</p>
           </div>
-        </Card>
+        </section>
       )}
+
+      {/* ── STEP 3 ── */}
+      {currentSummary && !loading && (
+        <section style={{ borderBottom: '1px solid var(--ibm-gray-20)' }}>
+          <div style={{ maxWidth: PAGE_MAX, margin: '0 auto', padding: `${SEC_PY} ${PAGE_PX}` }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
+              <StepBadge n="3" done />
+              <div>
+                <h2 style={{ fontFamily: 'IBM Plex Sans', fontWeight: 600, fontSize: '1.75rem', color: 'var(--ibm-gray-100)', margin: 0 }}>{t('home.step3Title')}</h2>
+                <p style={{ fontSize: '0.875rem', color: 'var(--ibm-gray-60)', margin: '0.25rem 0 0' }}>{t('home.step3Desc')}</p>
+              </div>
+            </div>
+            <SummaryDisplay summary={currentSummary} />
+          </div>
+        </section>
+      )}
+
+      {/* ── EMPTY STATE ── */}
+      {!file && !uploadedDoc && !currentSummary && (
+        <section style={{ backgroundColor: 'var(--ibm-gray-10)', borderBottom: '1px solid var(--ibm-gray-20)' }}>
+          <div style={{ maxWidth: PAGE_MAX, margin: '0 auto', padding: `${SEC_PY} ${PAGE_PX}`, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+            <h3 style={{ fontFamily: 'IBM Plex Sans', fontWeight: 300, fontSize: '2rem', color: 'var(--ibm-gray-100)', marginBottom: '1rem' }}>{t('home.emptyTitle')}</h3>
+            <p style={{ fontSize: '1rem', color: 'var(--ibm-gray-60)', maxWidth: '36rem', lineHeight: 1.7 }}>{t('home.emptyDesc')}</p>
+          </div>
+        </section>
+      )}
+
+      {/* ── CAPABILITIES ── */}
+      <section style={{ borderBottom: '1px solid var(--ibm-gray-20)' }}>
+        <div style={{ maxWidth: PAGE_MAX, margin: '0 auto', padding: `${SEC_PY} ${PAGE_PX}` }}>
+          <h2 style={{ fontFamily: 'IBM Plex Sans', fontWeight: 300, fontSize: 'clamp(1.75rem, 3vw, 2.625rem)', color: 'var(--ibm-gray-100)', marginBottom: '3rem' }}>
+            {t('home.capsTitle')}
+          </h2>
+          <div style={{ display: 'grid', gap: '1px', backgroundColor: 'var(--ibm-gray-20)' }} className="caps-grid">
+            {[
+              { Icon: LightFilled,        tKey: 'tldr',     cat: 'TL;DR'        },
+              { Icon: DocumentMultiple_01,tKey: 'detailed', cat: 'Detailed'     },
+              { Icon: List,               tKey: 'bullets',  cat: 'Bullet points'},
+              { Icon: Education,          tKey: 'eli5',     cat: 'ELI5'        },
+            ].map(({ Icon, tKey, cat }) => (
+              <div key={tKey} style={{ backgroundColor: 'var(--ibm-white)', padding: '2rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <p style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--ibm-gray-60)', margin: 0 }}>{cat}</p>
+                <Icon size={32} style={{ color: 'var(--ibm-blue)' }} />
+                <p style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--ibm-gray-100)', margin: 0 }}>{t(`caps.${tKey}.title`)}</p>
+                <p style={{ fontSize: '0.875rem', color: 'var(--ibm-gray-70)', lineHeight: 1.6, margin: 0, flex: 1 }}>{t(`caps.${tKey}.desc`)}</p>
+                <ArrowRight size={20} style={{ color: 'var(--ibm-blue)' }} />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── CTA BANNER ── */}
+      <section style={{ backgroundColor: '#edf5ff', borderBottom: '1px solid #d0e2ff' }}>
+        <div style={{ maxWidth: PAGE_MAX, margin: '0 auto', padding: `2rem ${PAGE_PX}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '2rem', flexWrap: 'wrap' }}>
+          <div>
+            <p style={{ fontWeight: 600, color: 'var(--ibm-gray-100)', margin: '0 0 0.25rem' }}>{t('home.ctaBannerTitle')}</p>
+            <p style={{ fontSize: '0.875rem', color: 'var(--ibm-gray-70)', margin: 0 }}>{t('home.ctaBannerDesc')}</p>
+          </div>
+          <Button renderIcon={ArrowRight} size="lg"
+            onClick={() => window.document.getElementById('upload-section')?.scrollIntoView({ behavior: 'smooth' })}>
+            {t('home.ctaBannerBtn')}
+          </Button>
+        </div>
+      </section>
     </div>
   );
 };
 
 export default HomePage;
-
-// Made with Bob

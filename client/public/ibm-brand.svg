@@ -1,0 +1,70 @@
+<svg viewBox="0 0 600 380" xmlns="http://www.w3.org/2000/svg">
+  <rect width="600" height="380" fill="#0f62fe"/>
+
+  <defs>
+    <!-- 8-bar horizontal stripe mask (white bars) applied via clipPath on white shapes -->
+    <!-- Bars: 13px tall, 8px gaps, 8 bars total. Total height = 8*13 + 7*8 = 104+56 = 160px -->
+    <!-- Centered in 380px: top = (380-160)/2 = 110 -->
+    <clipPath id="bars">
+      <rect x="0"   y="110" width="600" height="13"/>
+      <rect x="0"   y="131" width="600" height="13"/>
+      <rect x="0"   y="152" width="600" height="13"/>
+      <rect x="0"   y="173" width="600" height="13"/>
+      <rect x="0"   y="194" width="600" height="13"/>
+      <rect x="0"   y="215" width="600" height="13"/>
+      <rect x="0"   y="236" width="600" height="13"/>
+      <rect x="0"   y="257" width="600" height="13"/>
+    </clipPath>
+
+    <!-- Eye shape clip (left region x: 40-200) -->
+    <clipPath id="eye-shape">
+      <!-- Outer almond -->
+      <ellipse cx="120" cy="183" rx="78" ry="50"/>
+    </clipPath>
+    <!-- Eye pupil hole (subtract) — done as a separate white circle on blue -->
+
+    <!-- Bee shape clip (middle region x: 220-380) -->
+    <clipPath id="bee-shape">
+      <!-- Body (vertical oval) -->
+      <ellipse cx="300" cy="185" rx="38" ry="58"/>
+      <!-- Left wing -->
+      <ellipse cx="255" cy="148" rx="30" ry="18" transform="rotate(-20 255 148)"/>
+      <!-- Right wing -->
+      <ellipse cx="345" cy="148" rx="30" ry="18" transform="rotate(20 345 148)"/>
+      <!-- Antennae left -->
+      <rect x="283" y="112" width="6" height="20" rx="3" transform="rotate(-15 283 112)"/>
+      <!-- Antennae right -->
+      <rect x="311" y="112" width="6" height="20" rx="3" transform="rotate(15 311 112)"/>
+    </clipPath>
+
+    <!-- M shape clip (right region x: 400-570) -->
+    <clipPath id="m-shape">
+      <text x="400" y="262" font-size="172" font-family="'IBM Plex Sans', 'Arial', sans-serif" font-weight="700" letter-spacing="-8">M</text>
+    </clipPath>
+  </defs>
+
+  <!-- Eye: white filled eye clipped to bars -->
+  <g clip-path="url(#bars)">
+    <ellipse cx="120" cy="183" rx="78" ry="50" fill="white" clip-path="url(#eye-shape)"/>
+  </g>
+  <!-- Eye pupil: blue circle on top to create iris effect -->
+  <circle cx="120" cy="183" r="22" fill="#0f62fe"/>
+  <!-- Pupil bars overlay -->
+  <g clip-path="url(#bars)">
+    <circle cx="120" cy="183" r="14" fill="white"/>
+  </g>
+
+  <!-- Bee: white filled shapes clipped to bars -->
+  <g clip-path="url(#bars)">
+    <ellipse cx="300" cy="185" rx="38" ry="58" fill="white" clip-path="url(#bee-shape)"/>
+    <ellipse cx="255" cy="148" rx="30" ry="18" fill="white" clip-path="url(#bee-shape)" transform="rotate(-20 255 148)"/>
+    <ellipse cx="345" cy="148" rx="30" ry="18" fill="white" clip-path="url(#bee-shape)" transform="rotate(20 345 148)"/>
+    <rect x="283" y="112" width="6" height="20" rx="3" fill="white" clip-path="url(#bee-shape)" transform="rotate(-15 283 112)"/>
+    <rect x="311" y="112" width="6" height="20" rx="3" fill="white" clip-path="url(#bee-shape)" transform="rotate(15 311 112)"/>
+  </g>
+
+  <!-- M: white text clipped to bars -->
+  <g clip-path="url(#bars)">
+    <text x="400" y="262" font-size="172" font-family="'IBM Plex Sans', 'Arial', sans-serif" font-weight="700" fill="white" letter-spacing="-8" clip-path="url(#m-shape)">M</text>
+  </g>
+</svg>

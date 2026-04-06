@@ -1,94 +1,77 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { History as HistoryIcon, X, Copy, Check } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Time, CopyFile, Checkmark, Close } from '@carbon/icons-react';
+import { Button, Tag, Loading } from '@carbon/react';
 import { useUser } from '../context/UserContext';
 import { useSummary } from '../context/SummaryContext';
-import Card from '../components/common/Card';
-import Button from '../components/common/Button';
-import LoadingSpinner from '../components/common/LoadingSpinner';
 import { formatDate, formatNumber, formatProcessingTime, calculateCompressionRatio, truncateText } from '../utils/formatters';
-import { SUMMARY_MODE_LABELS } from '../utils/constants';
+
+const PAGE_MAX = '1312px';
+const PAGE_PX  = 'clamp(1rem, 5vw, 5rem)';
+
+const modeColors = { tldr: 'blue', detailed: 'purple', bullets: 'teal', eli5: 'green' };
 
 const SummaryModal = ({ summary, onClose }) => {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
+  const modeKey = summary.mode?.toLowerCase();
 
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(summary.summaryText);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy:', err);
-    }
+    } catch (err) { console.error('Failed to copy:', err); }
   };
 
   const modal = (
-    <div
-      style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem' }}
-      onClick={onClose}
-    >
-      <div
-        style={{ backgroundColor: 'white', borderRadius: '0.75rem', boxShadow: '0 20px 60px rgba(0,0,0,0.3)', width: '100%', maxWidth: '42rem', maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <span className="px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm font-medium">
-              {SUMMARY_MODE_LABELS[summary.mode]}
-            </span>
-            <span className="text-sm text-gray-500">{formatDate(summary.createdAt)}</span>
+    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem' }}
+      onClick={onClose}>
+      <div style={{ backgroundColor: 'var(--ibm-white)', width: '100%', maxWidth: '48rem', maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+        onClick={(e) => e.stopPropagation()}>
+        {/* Modal header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--ibm-gray-20)', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <Tag type={modeColors[modeKey] || 'blue'} size="md">{t(`modes.${modeKey}.label`, summary.mode)}</Tag>
+            <span style={{ fontSize: '0.875rem', color: 'var(--ibm-gray-60)' }}>{formatDate(summary.createdAt)}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handleCopy} icon={copied ? Check : Copy}>
-              {copied ? 'Copied!' : 'Copy'}
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <Button kind="ghost" size="sm" renderIcon={copied ? Checkmark : CopyFile} onClick={handleCopy}>
+              {copied ? t('history.copied') : t('history.copy')}
             </Button>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            <Button kind="ghost" size="sm" renderIcon={Close} iconDescription="Close" hasIconOnly onClick={onClose} />
           </div>
         </div>
-
-        {/* Body */}
-        <div className="p-6 flex-1" style={{ overflowY: 'auto' }}>
+        {/* Modal body */}
+        <div style={{ padding: '1.5rem', flex: 1, overflowY: 'auto' }}>
           {summary.mode === 'bullets' ? (
-            <div className="space-y-2">
-              {summary.summaryText.split('\n').filter(line => line.trim()).map((line, index) => (
-                <div key={index} className="flex gap-2">
-                  <span className="text-primary-600 font-bold">•</span>
-                  <p className="text-gray-700 flex-1">{line.replace(/^-\s*/, '')}</p>
-                </div>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+              {summary.summaryText.split('\n').filter(l => l.trim()).map((line, i) => (
+                <li key={i} style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                  <span style={{ color: 'var(--ibm-blue)', fontWeight: 700, flexShrink: 0 }}>—</span>
+                  <p style={{ color: 'var(--ibm-gray-90)', margin: 0, lineHeight: 1.7 }}>{line.replace(/^-\s*/, '')}</p>
+                </li>
               ))}
-            </div>
+            </ul>
           ) : (
-            <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">{summary.summaryText}</p>
+            <p style={{ color: 'var(--ibm-gray-90)', whiteSpace: 'pre-wrap', lineHeight: 1.7, margin: 0 }}>{summary.summaryText}</p>
           )}
         </div>
-
         {/* Stats */}
-        <div className="p-6 border-t border-gray-200 bg-gray-50 flex-shrink-0">
-          <div className="grid grid-cols-4 gap-4">
-            <div>
-              <p className="text-xs text-gray-500 mb-1">Original Words</p>
-              <p className="text-lg font-bold text-gray-900">{formatNumber(summary.originalWordCount)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 mb-1">Summary Words</p>
-              <p className="text-lg font-bold text-gray-900">{formatNumber(summary.summaryWordCount)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 mb-1">Compression</p>
-              <p className="text-lg font-bold text-green-600">
-                {calculateCompressionRatio(summary.originalWordCount, summary.summaryWordCount)}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 mb-1">Processing Time</p>
-              <p className="text-lg font-bold text-primary-600">{formatProcessingTime(summary.processingTime)}</p>
-            </div>
+        <div style={{ padding: '1.25rem 1.5rem', borderTop: '1px solid var(--ibm-gray-20)', backgroundColor: 'var(--ibm-gray-10)', flexShrink: 0 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
+            {[
+              { labelKey: 'history.originalWords',  value: formatNumber(summary.originalWordCount),                                              color: 'var(--ibm-gray-100)' },
+              { labelKey: 'history.summaryWords',   value: formatNumber(summary.summaryWordCount),                                               color: 'var(--ibm-gray-100)' },
+              { labelKey: 'history.compression',    value: calculateCompressionRatio(summary.originalWordCount, summary.summaryWordCount),        color: '#24a148' },
+              { labelKey: 'history.processingTime', value: formatProcessingTime(summary.processingTime),                                         color: 'var(--ibm-blue)' },
+            ].map((stat) => (
+              <div key={stat.labelKey}>
+                <p style={{ fontSize: '0.75rem', color: 'var(--ibm-gray-60)', marginBottom: '0.25rem' }}>{t(stat.labelKey)}</p>
+                <p style={{ fontSize: '1.25rem', fontWeight: 700, color: stat.color, margin: 0 }}>{stat.value}</p>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -99,82 +82,71 @@ const SummaryModal = ({ summary, onClose }) => {
 };
 
 const HistoryPage = () => {
+  const { t } = useTranslation();
   const { user } = useUser();
   const { summaries, loading, loadHistory } = useSummary();
   const [selectedSummary, setSelectedSummary] = useState(null);
 
-  useEffect(() => {
-    if (user) {
-      loadHistory(user.id);
-    }
-  }, [user]);
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <LoadingSpinner size="lg" text="Loading your history..." />
-      </div>
-    );
-  }
-
-  if (!summaries || summaries.length === 0) {
-    return (
-      <Card className="text-center py-12">
-        <HistoryIcon className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-        <h2 className="text-2xl font-semibold text-gray-900 mb-2">
-          No Summaries Yet
-        </h2>
-        <p className="text-gray-600">
-          Your generated summaries will appear here.
-        </p>
-      </Card>
-    );
-  }
+  useEffect(() => { if (user) loadHistory(user.id); }, [user]);
 
   return (
-    <div className="space-y-6">
-      {selectedSummary && (
-        <SummaryModal summary={selectedSummary} onClose={() => setSelectedSummary(null)} />
-      )}
+    <div>
+      {selectedSummary && <SummaryModal summary={selectedSummary} onClose={() => setSelectedSummary(null)} />}
 
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Summary History
-        </h1>
-        <p className="text-gray-600">
-          View and manage your previously generated summaries
-        </p>
-      </div>
+      <section style={{ borderBottom: '1px solid var(--ibm-gray-20)', backgroundColor: 'var(--ibm-white)' }}>
+        <div style={{ maxWidth: PAGE_MAX, margin: '0 auto', padding: `3rem ${PAGE_PX} 2.5rem` }}>
+          <h1 style={{ fontFamily: 'IBM Plex Sans', fontWeight: 300, fontSize: 'clamp(1.75rem, 3vw, 2.625rem)', color: 'var(--ibm-gray-100)', marginBottom: '0.5rem' }}>
+            {t('history.pageTitle')}
+          </h1>
+          <p style={{ color: 'var(--ibm-gray-60)', margin: 0, fontSize: '1rem' }}>{t('history.pageDesc')}</p>
+        </div>
+      </section>
 
-      <div className="space-y-4">
-        {summaries.map((summary) => (
-          <Card key={summary.id} hover className="cursor-pointer" onClick={() => setSelectedSummary(summary)}>
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm font-medium">
-                    {SUMMARY_MODE_LABELS[summary.mode]}
-                  </span>
-                  <span className="text-sm text-gray-500">
-                    {formatDate(summary.createdAt)}
-                  </span>
-                </div>
-                <p className="text-gray-700 mb-2">
-                  {truncateText(summary.summaryText, 200)}
-                </p>
-                <div className="flex gap-4 text-sm text-gray-500">
-                  <span>{summary.originalWordCount} → {summary.summaryWordCount} words</span>
-                  <span>{summary.compressionRatio}% compression</span>
-                </div>
-              </div>
+      <section style={{ backgroundColor: 'var(--ibm-gray-10)', minHeight: '60vh' }}>
+        <div style={{ maxWidth: PAGE_MAX, margin: '0 auto', padding: `3rem ${PAGE_PX}` }}>
+          {loading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '20rem' }}>
+              <Loading description={t('history.loading')} withOverlay={false} />
             </div>
-          </Card>
-        ))}
-      </div>
+          ) : !summaries || summaries.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '5rem 0' }}>
+              <Time size={48} style={{ color: 'var(--ibm-gray-30)', marginBottom: '1rem' }} />
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--ibm-gray-100)', marginBottom: '0.5rem' }}>{t('history.emptyTitle')}</h2>
+              <p style={{ color: 'var(--ibm-gray-60)' }}>{t('history.emptyDesc')}</p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.125rem' }}>
+              {summaries.map((summary) => {
+                const modeKey = summary.mode?.toLowerCase();
+                return (
+                  <div key={summary.id} onClick={() => setSelectedSummary(summary)}
+                    style={{ backgroundColor: 'var(--ibm-white)', borderLeft: '4px solid var(--ibm-blue)', padding: '1.25rem 1.5rem', cursor: 'pointer', transition: 'background-color 0.15s' }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--ibm-blue-10)'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--ibm-white)'}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem' }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.625rem', flexWrap: 'wrap' }}>
+                          <Tag type={modeColors[modeKey] || 'blue'} size="sm">{t(`modes.${modeKey}.label`, summary.mode)}</Tag>
+                          <span style={{ fontSize: '0.8125rem', color: 'var(--ibm-gray-60)' }}>{formatDate(summary.createdAt)}</span>
+                        </div>
+                        <p style={{ color: 'var(--ibm-gray-80)', margin: '0 0 0.625rem', lineHeight: 1.6, fontSize: '0.9375rem' }}>
+                          {truncateText(summary.summaryText, 200)}
+                        </p>
+                        <p style={{ fontSize: '0.8125rem', color: 'var(--ibm-gray-50)', margin: 0 }}>
+                          {summary.originalWordCount} → {summary.summaryWordCount} {t('history.summaryWords').toLowerCase()} · {summary.compressionRatio}% {t('history.compression').toLowerCase()}
+                        </p>
+                      </div>
+                      <span style={{ fontSize: '0.8125rem', color: 'var(--ibm-blue)', whiteSpace: 'nowrap', flexShrink: 0 }}>{t('history.view')}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </section>
     </div>
   );
 };
 
 export default HistoryPage;
-
-// Made with Bob

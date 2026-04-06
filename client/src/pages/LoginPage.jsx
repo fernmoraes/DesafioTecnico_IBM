@@ -1,49 +1,47 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileText, Eye, EyeOff, Check, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { View, ViewOff, CheckmarkFilled, MisuseOutline } from '@carbon/icons-react';
 import toast, { Toaster } from 'react-hot-toast';
+import { Button, TextInput, Tab, Tabs, TabList, TabPanels, TabPanel } from '@carbon/react';
 import { useUser } from '../context/UserContext';
 import { useSummary } from '../context/SummaryContext';
 import { validatePassword } from '../utils/formatters';
-import Button from '../components/common/Button';
-import Card from '../components/common/Card';
 
-const PasswordInput = ({ value, onChange, placeholder, disabled, showStrength = false }) => {
+const PasswordInput = ({ id, labelText, value, onChange, placeholder, disabled, showStrength = false }) => {
+  const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
   const rules = [
-    { label: 'At least 8 characters', pass: value.length >= 8 },
-    { label: 'Uppercase letter', pass: /[A-Z]/.test(value) },
-    { label: 'Lowercase letter', pass: /[a-z]/.test(value) },
-    { label: 'Number', pass: /\d/.test(value) },
-    { label: 'Special character', pass: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(value) },
+    { labelKey: 'login.pwdRule8chars', pass: value.length >= 8 },
+    { labelKey: 'login.pwdRuleUpper',  pass: /[A-Z]/.test(value) },
+    { labelKey: 'login.pwdRuleLower',  pass: /[a-z]/.test(value) },
+    { labelKey: 'login.pwdRuleNumber', pass: /\d/.test(value) },
+    { labelKey: 'login.pwdRuleSpecial',pass: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(value) },
   ];
 
   return (
     <div>
-      <input
-        type={visible ? 'text' : 'password'}
-        value={value}
-        onChange={onChange}
-        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-        placeholder={placeholder}
-        required
-        disabled={disabled}
-      />
-      <button
-        type="button"
-        className="flex items-center gap-1.5 mt-1 text-xs text-gray-500 hover:text-primary-600 transition-colors"
-        onClick={() => setVisible(v => !v)}
-        tabIndex={-1}
-      >
-        {visible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-        {visible ? 'Hide password' : 'Show password'}
-      </button>
+      <div style={{ position: 'relative' }}>
+        <TextInput
+          id={id} labelText={labelText}
+          type={visible ? 'text' : 'password'}
+          value={value} onChange={onChange}
+          placeholder={placeholder} required disabled={disabled}
+        />
+        <button type="button" onClick={() => setVisible(v => !v)} tabIndex={-1}
+          aria-label={visible ? t('login.hidePassword') : t('login.showPassword')}
+          style={{ position: 'absolute', right: '1rem', bottom: '0.75rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ibm-gray-60)', display: 'flex', alignItems: 'center' }}>
+          {visible ? <ViewOff size={16} /> : <View size={16} />}
+        </button>
+      </div>
       {showStrength && value.length > 0 && (
-        <ul className="mt-1 space-y-1">
+        <ul style={{ marginTop: '0.5rem', listStyle: 'none', padding: 0 }}>
           {rules.map(rule => (
-            <li key={rule.label} className={`flex items-center gap-1.5 text-xs ${rule.pass ? 'text-green-600' : 'text-gray-400'}`}>
-              {rule.pass ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
-              {rule.label}
+            <li key={rule.labelKey} style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.75rem', color: rule.pass ? '#24a148' : 'var(--ibm-gray-50)', marginBottom: '0.25rem' }}>
+              {rule.pass
+                ? <CheckmarkFilled size={12} style={{ color: '#24a148' }} />
+                : <MisuseOutline size={12} style={{ color: 'var(--ibm-gray-40)' }} />}
+              {t(rule.labelKey)}
             </li>
           ))}
         </ul>
@@ -53,10 +51,10 @@ const PasswordInput = ({ value, onChange, placeholder, disabled, showStrength = 
 };
 
 const LoginPage = () => {
+  const { t } = useTranslation();
   const { login, createUser } = useUser();
   const { clearAll } = useSummary();
   const navigate = useNavigate();
-  const [tab, setTab] = useState('login');
   const [loading, setLoading] = useState(false);
   const [loginData, setLoginData] = useState({ email: '', password: '' });
   const [registerData, setRegisterData] = useState({ name: '', email: '', password: '' });
@@ -67,154 +65,108 @@ const LoginPage = () => {
       setLoading(true);
       clearAll();
       await login(loginData.email, loginData.password);
-      toast.success('Welcome back!');
+      toast.success(t('success.welcomeBack'));
       navigate('/');
     } catch (err) {
-      toast.error(err.message || 'Invalid email or password');
-    } finally {
-      setLoading(false);
-    }
+      toast.error(err.message || t('errors.invalidCredentials'));
+    } finally { setLoading(false); }
   };
 
   const handleRegister = async (e) => {
     e.preventDefault();
     const { valid, errors } = validatePassword(registerData.password);
-    if (!valid) {
-      toast.error(`Password requirements not met: ${errors[0]}`);
-      return;
-    }
+    if (!valid) { toast.error(t('errors.passwordRequirements', { error: errors[0] })); return; }
     try {
       setLoading(true);
       clearAll();
       await createUser(registerData.name, registerData.email, registerData.password);
-      toast.success('Account created! Welcome!');
+      toast.success(t('success.accountCreated'));
       navigate('/');
     } catch (err) {
-      toast.error(err.message || 'Registration failed');
-    } finally {
-      setLoading(false);
-    }
+      toast.error(err.message || t('errors.registrationFailed'));
+    } finally { setLoading(false); }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div style={{ minHeight: '100vh', backgroundColor: 'var(--ibm-gray-10)', display: 'flex' }}>
       <Toaster position="top-right" />
 
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-3 mb-3">
-            <FileText className="w-10 h-10 text-primary-600" />
-            <h1 className="text-3xl font-bold text-gray-900">AI Summarizer</h1>
-          </div>
-          <p className="text-gray-500">Powered by IBM Granite</p>
+      {/* Left panel — brand */}
+      <div style={{ flex: 1, backgroundColor: 'var(--ibm-gray-100)', flexDirection: 'column', justifyContent: 'center', padding: '4rem', minHeight: '100vh' }} className="login-panel-brand">
+        <p style={{ color: 'var(--ibm-blue)', fontSize: '0.875rem', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '1.5rem' }}>
+          IBM AI Summarizer
+        </p>
+        <h1 style={{ color: 'var(--ibm-white)', fontSize: '2.5rem', fontWeight: 300, lineHeight: 1.2, marginBottom: '1.5rem', fontFamily: 'IBM Plex Sans' }}>
+          {t('login.brandTitle')}<br />
+          <span style={{ color: 'var(--ibm-blue)', fontWeight: 600 }}>{t('login.brandAccent')}</span>
+        </h1>
+        <p style={{ color: 'var(--ibm-gray-40)', fontSize: '1rem', lineHeight: 1.7, maxWidth: '28rem' }}>
+          {t('login.brandDesc')}
+        </p>
+        <div style={{ marginTop: '3rem', borderLeft: '2px solid var(--ibm-blue)', paddingLeft: '1rem' }}>
+          <p style={{ color: 'var(--ibm-gray-30)', fontSize: '0.875rem', lineHeight: 1.6 }}>
+            {t('login.quote')}
+          </p>
+          <p style={{ color: 'var(--ibm-gray-50)', fontSize: '0.75rem', marginTop: '0.5rem' }}>
+            {t('login.quoteBy')}
+          </p>
         </div>
+      </div>
 
-        <Card>
-          {/* Tabs */}
-          <div className="flex border-b border-gray-200 mb-6">
-            <button
-              className={`flex-1 py-2 text-sm font-medium transition-colors ${
-                tab === 'login' ? 'text-primary-600 border-b-2 border-primary-600' : 'text-gray-500 hover:text-gray-700'
-              }`}
-              onClick={() => setTab('login')}
-            >
-              Login
-            </button>
-            <button
-              className={`flex-1 py-2 text-sm font-medium transition-colors ${
-                tab === 'register' ? 'text-primary-600 border-b-2 border-primary-600' : 'text-gray-500 hover:text-gray-700'
-              }`}
-              onClick={() => setTab('register')}
-            >
-              Create Account
-            </button>
+      {/* Right panel — form */}
+      <div style={{ width: '100%', maxWidth: '480px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem', backgroundColor: 'var(--ibm-white)' }}>
+        <div style={{ width: '100%' }}>
+          <div className="login-mobile-brand mb-8 text-center">
+            <p style={{ color: 'var(--ibm-gray-100)', fontSize: '1.5rem', fontWeight: 600 }}>{t('login.mobileBrand')}</p>
+            <p style={{ color: 'var(--ibm-gray-60)', fontSize: '0.875rem', marginTop: '0.25rem' }}>{t('login.mobileSub')}</p>
           </div>
 
-          {/* Login Form */}
-          {tab === 'login' && (
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input
-                  type="email"
-                  value={loginData.email}
-                  onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  placeholder="Enter your email"
-                  required
-                  disabled={loading}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                <PasswordInput
-                  value={loginData.password}
-                  onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
-                  placeholder="Enter your password"
-                  disabled={loading}
-                />
-              </div>
-              <Button type="submit" className="w-full" loading={loading} disabled={loading}>
-                Login
-              </Button>
-              <p className="text-center text-sm text-gray-500">
-                No account?{' '}
-                <button type="button" className="text-primary-600 hover:underline font-medium" onClick={() => setTab('register')}>
-                  Create one
-                </button>
-              </p>
-            </form>
-          )}
+          <h2 style={{ fontSize: '1.75rem', fontWeight: 600, color: 'var(--ibm-gray-100)', marginBottom: '2rem', fontFamily: 'IBM Plex Sans' }}>
+            {t('login.welcome')}
+          </h2>
 
-          {/* Register Form */}
-          {tab === 'register' && (
-            <form onSubmit={handleRegister} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                <input
-                  type="text"
-                  value={registerData.name}
-                  onChange={(e) => setRegisterData({ ...registerData, name: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  placeholder="Enter your name"
-                  required
-                  disabled={loading}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input
-                  type="email"
-                  value={registerData.email}
-                  onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  placeholder="Enter your email"
-                  required
-                  disabled={loading}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                <PasswordInput
-                  value={registerData.password}
-                  onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
-                  placeholder="Create a password"
-                  disabled={loading}
-                  showStrength
-                />
-              </div>
-              <Button type="submit" className="w-full" loading={loading} disabled={loading}>
-                Create Account
-              </Button>
-              <p className="text-center text-sm text-gray-500">
-                Already have an account?{' '}
-                <button type="button" className="text-primary-600 hover:underline font-medium" onClick={() => setTab('login')}>
-                  Login
-                </button>
-              </p>
-            </form>
-          )}
-        </Card>
+          <Tabs>
+            <TabList aria-label={t('login.welcome')}>
+              <Tab>{t('login.tabSignIn')}</Tab>
+              <Tab>{t('login.tabCreate')}</Tab>
+            </TabList>
+
+            <TabPanels>
+              {/* Sign in */}
+              <TabPanel>
+                <form onSubmit={handleLogin} style={{ marginTop: '1.5rem' }} className="space-y-5">
+                  <TextInput id="login-email" labelText={t('login.emailLabel')} type="email"
+                    value={loginData.email} onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
+                    placeholder={t('login.emailPlaceholder')} required disabled={loading} />
+                  <PasswordInput id="login-password" labelText={t('login.passwordLabel')}
+                    value={loginData.password} onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                    placeholder={t('login.passwordPlaceholder')} disabled={loading} />
+                  <Button type="submit" disabled={loading} size="lg" style={{ width: '100%', maxWidth: '100%', justifyContent: 'center' }}>
+                    {loading ? t('login.signingIn') : t('login.signInBtn')}
+                  </Button>
+                </form>
+              </TabPanel>
+
+              {/* Register */}
+              <TabPanel>
+                <form onSubmit={handleRegister} style={{ marginTop: '1.5rem' }} className="space-y-5">
+                  <TextInput id="reg-name" labelText={t('login.nameLabel')} type="text"
+                    value={registerData.name} onChange={(e) => setRegisterData({ ...registerData, name: e.target.value })}
+                    placeholder={t('login.namePlaceholder')} required disabled={loading} />
+                  <TextInput id="reg-email" labelText={t('login.emailLabel')} type="email"
+                    value={registerData.email} onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
+                    placeholder={t('login.emailPlaceholder')} required disabled={loading} />
+                  <PasswordInput id="reg-password" labelText={t('login.passwordLabel')}
+                    value={registerData.password} onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
+                    placeholder={t('login.newPasswordPlaceholder')} disabled={loading} showStrength />
+                  <Button type="submit" disabled={loading} size="lg" style={{ width: '100%', maxWidth: '100%', justifyContent: 'center' }}>
+                    {loading ? t('login.creatingAccount') : t('login.createAccountBtn')}
+                  </Button>
+                </form>
+              </TabPanel>
+            </TabPanels>
+          </Tabs>
+        </div>
       </div>
     </div>
   );

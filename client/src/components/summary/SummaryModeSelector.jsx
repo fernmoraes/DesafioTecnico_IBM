@@ -1,61 +1,60 @@
-import { SUMMARY_MODES, SUMMARY_MODE_LABELS, SUMMARY_MODE_DESCRIPTIONS } from '../../utils/constants';
-import Card from '../common/Card';
+import { useTranslation } from 'react-i18next';
+import { Flash, DocumentMultiple_01, List, Education } from '@carbon/icons-react';
+import { SUMMARY_MODES } from '../../utils/constants';
+
+const modes = [
+  { value: SUMMARY_MODES.TLDR,     Icon: Flash,               tKey: 'tldr'     },
+  { value: SUMMARY_MODES.DETAILED, Icon: DocumentMultiple_01, tKey: 'detailed' },
+  { value: SUMMARY_MODES.BULLETS,  Icon: List,                tKey: 'bullets'  },
+  { value: SUMMARY_MODES.ELI5,     Icon: Education,           tKey: 'eli5'     },
+];
 
 const SummaryModeSelector = ({ selectedMode, onModeChange, disabled = false }) => {
-  const modes = [
-    { value: SUMMARY_MODES.TLDR, icon: '⚡' },
-    { value: SUMMARY_MODES.DETAILED, icon: '📄' },
-    { value: SUMMARY_MODES.BULLETS, icon: '📋' },
-    { value: SUMMARY_MODES.ELI5, icon: '🎓' },
-  ];
+  const { t } = useTranslation();
 
   return (
-    <div className="space-y-3">
-      <h3 className="text-lg font-semibold text-gray-900">Choose Summary Type</h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {modes.map((mode) => (
-          <Card
-            key={mode.value}
-            padding={false}
-            hover={!disabled}
-            className={`
-              cursor-pointer transition-all duration-200
-              ${selectedMode === mode.value
-                ? 'ring-2 ring-primary-500 border-primary-500'
-                : 'border border-gray-200 hover:border-primary-300'
-              }
-              ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
-            `}
-          >
-            <label className="flex items-start gap-4 p-4 cursor-pointer">
-              <input
-                type="radio"
-                name="summaryMode"
-                value={mode.value}
-                checked={selectedMode === mode.value}
-                onChange={(e) => onModeChange(e.target.value)}
-                disabled={disabled}
-                className="mt-1 w-4 h-4 text-primary-600 focus:ring-primary-500"
-              />
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-2xl">{mode.icon}</span>
-                  <span className="font-semibold text-gray-900">
-                    {SUMMARY_MODE_LABELS[mode.value]}
-                  </span>
-                </div>
-                <p className="text-sm text-gray-600">
-                  {SUMMARY_MODE_DESCRIPTIONS[mode.value]}
-                </p>
+    <div>
+      <p style={{ fontSize: '0.875rem', color: 'var(--ibm-gray-60)', marginBottom: '1rem' }}>
+        {t('modeSelector.hint')}
+      </p>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.125rem' }}>
+        {modes.map(({ value, Icon, tKey }) => {
+          const active = selectedMode === value;
+          return (
+            <button
+              key={value}
+              type="button"
+              onClick={() => !disabled && onModeChange(value)}
+              disabled={disabled}
+              style={{
+                all: 'unset',
+                display: 'block',
+                padding: '1.25rem 1.5rem',
+                cursor: disabled ? 'not-allowed' : 'pointer',
+                backgroundColor: active ? 'var(--ibm-blue)' : 'var(--ibm-white)',
+                borderLeft: '4px solid var(--ibm-blue)',
+                transition: 'background-color 0.15s',
+                opacity: disabled ? 0.5 : 1,
+              }}
+              onMouseEnter={(e) => { if (!disabled && !active) e.currentTarget.style.backgroundColor = 'var(--ibm-blue-10)'; }}
+              onMouseLeave={(e) => { if (!active) e.currentTarget.style.backgroundColor = 'var(--ibm-white)'; }}
+              aria-pressed={active}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '0.375rem' }}>
+                <Icon size={20} style={{ color: active ? 'var(--ibm-white)' : 'var(--ibm-blue)', flexShrink: 0 }} />
+                <span style={{ fontWeight: 600, fontSize: '0.9375rem', color: active ? 'var(--ibm-white)' : 'var(--ibm-gray-100)', fontFamily: 'IBM Plex Sans' }}>
+                  {t(`modes.${tKey}.label`)}
+                </span>
               </div>
-            </label>
-          </Card>
-        ))}
+              <p style={{ fontSize: '0.8125rem', color: active ? 'rgba(255,255,255,0.75)' : 'var(--ibm-gray-60)', margin: 0, lineHeight: 1.5 }}>
+                {t(`modes.${tKey}.description`)}
+              </p>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
 };
 
 export default SummaryModeSelector;
-
-// Made with Bob

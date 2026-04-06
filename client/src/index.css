@@ -1,20 +1,174 @@
+/* Import Carbon Design System styles */
+@import '@carbon/styles/css/styles.css';
+@import '@ibm/plex/css/ibm-plex.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Custom styles */
-body {
+/* IBM Carbon Design System — Global Tokens */
+:root {
+  --ibm-blue:       #0f62fe;
+  --ibm-blue-60:    #0043ce;
+  --ibm-blue-70:    #002d9c;
+  --ibm-blue-10:    #edf5ff;
+  --ibm-gray-10:    #f4f4f4;
+  --ibm-gray-20:    #e0e0e0;
+  --ibm-gray-30:    #c6c6c6;
+  --ibm-gray-40:    #a8a8a8;
+  --ibm-gray-50:    #8d8d8d;
+  --ibm-gray-60:    #6f6f6f;
+  --ibm-gray-70:    #525252;
+  --ibm-gray-80:    #393939;
+  --ibm-gray-90:    #262626;
+  --ibm-gray-100:   #161616;
+  --ibm-white:      #ffffff;
+  --ibm-black:      #000000;
+
+  font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+html, body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  padding: 0;
+  font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: var(--ibm-white);
+  color: var(--ibm-gray-100);
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+  font-family: 'IBM Plex Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
 }
 
-/* Made with Bob */
+/* Carbon button font override */
+.cds--btn {
+  font-family: 'IBM Plex Sans', sans-serif;
+}
+
+/* Carbon header padding fix for top bar */
+.cds--header ~ .cds--content {
+  margin-top: 3rem;
+}
+
+/* IBM-style section dividers */
+.ibm-section {
+  padding: 4rem 0;
+}
+
+.ibm-section--dark {
+  background-color: var(--ibm-gray-100);
+  color: var(--ibm-white);
+}
+
+.ibm-section--light {
+  background-color: var(--ibm-gray-10);
+}
+
+/* IBM card style (no border-radius, sharp corners) */
+.ibm-card {
+  background: var(--ibm-white);
+  border: 1px solid var(--ibm-gray-20);
+}
+
+/* IBM hero heading */
+.ibm-hero-heading {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-weight: 300;
+  font-size: 3.375rem;
+  line-height: 1.19;
+  letter-spacing: 0;
+  color: var(--ibm-gray-100);
+}
+
+/* Language select — light options list */
+#lang-select option {
+  background-color: #f4f4f4;
+  color: #161616;
+}
+
+/* IBM blue text */
+.ibm-blue-text {
+  color: var(--ibm-blue);
+}
+
+/* ── Responsive grid: hero (2-col → 1-col on mobile) ── */
+.hero-grid {
+  grid-template-columns: 1fr 1fr;
+}
+@media (max-width: 768px) {
+  .hero-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Responsive grid: 4-column capabilities → 2-col → 1-col ── */
+.caps-grid {
+  grid-template-columns: repeat(4, 1fr);
+}
+@media (max-width: 1024px) {
+  .caps-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 640px) {
+  .caps-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Responsive: profile sidebar → stacks on mobile ── */
+.profile-layout {
+  grid-template-columns: 220px 1fr;
+}
+@media (max-width: 768px) {
+  .profile-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Login page: split panel ── */
+.login-panel-brand {
+  display: flex;
+}
+@media (max-width: 1024px) {
+  .login-panel-brand {
+    display: none;
+  }
+}
+
+/* ── Footer grid: 4 cols → 2 cols → 1 col ── */
+.footer-grid {
+  grid-template-columns: repeat(4, 1fr);
+}
+@media (max-width: 768px) {
+  .footer-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 480px) {
+  .footer-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Mobile brand (visible only when sidebar is hidden) */
+.login-mobile-brand { display: none; }
+@media (max-width: 1024px) {
+  .login-mobile-brand { display: block; }
+}
+
+/* Progress step number */
+.ibm-step-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  background-color: var(--ibm-blue);
+  color: var(--ibm-white);
+  font-size: 0.875rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
