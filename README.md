@@ -1,64 +1,53 @@
-# AI Document Summarizer - Project Documentation
+# AI Document Summarizer
 
 > **An intelligent web application that transforms lengthy documents into concise, customizable summaries using IBM's Granite AI model.**
 
 ---
 
-## 📚 Documentation Index
-
-This project includes comprehensive planning documentation to guide development:
-
-| Document | Purpose | When to Use |
-|----------|---------|-------------|
-| **[PROJECT_PLAN.md](PROJECT_PLAN.md)** | Complete detailed plan with all specifications | Reference throughout development |
-| **[QUICK_START.md](QUICK_START.md)** | Day-by-day implementation guide | Daily development roadmap |
-| **[ARCHITECTURE.md](ARCHITECTURE.md)** | Visual architecture diagrams and technical decisions | Understanding system design |
-| **README.md** (this file) | Project overview and getting started | First-time setup |
-
----
-
 ## 🎯 Project Overview
 
-### What It Does
-Upload a document (PDF or text file) and receive AI-generated summaries in multiple formats:
-- **TL;DR**: Ultra-short 2-3 sentence overview
-- **Detailed**: Comprehensive paragraph-form summary
-- **Bullet Points**: Key takeaways in list format
-- **ELI5**: Simplified explanation (extended feature)
+Upload a PDF or TXT document and receive AI-generated summaries in multiple formats, with full user authentication and per-user history.
 
-### Why It Matters
-- **Time Savings**: Reduce document reading time by 80%+
-- **Flexibility**: Multiple summary formats for different needs
-- **Enterprise AI**: Powered by IBM's trusted Granite model
-- **User-Friendly**: Clean, intuitive interface
+### What It Does
+- **TL;DR** — Ultra-short 2-3 sentence overview
+- **Detailed** — Comprehensive paragraph-form summary
+- **Bullet Points** — Key takeaways in list format
+- **ELI5** — Simplified explanation anyone can understand
 
 ---
 
 ## 🏗️ Technology Stack
 
 ### Frontend
-- **React 18** - UI framework
-- **Tailwind CSS 3** - Styling
-- **Vite** - Build tool
-- **React Router** - Navigation
-- **Axios** - HTTP client
-- **react-dropzone** - File upload
-- **react-hot-toast** - Notifications
+| Library | Version | Purpose |
+|---------|---------|---------|
+| React | 18 | UI framework |
+| Tailwind CSS | 3 | Styling |
+| Vite | 5 | Build tool |
+| React Router | 6 | Navigation |
+| Axios | 1.x | HTTP client |
+| react-dropzone | — | File upload |
+| react-hot-toast | — | Notifications |
+| lucide-react | — | Icons |
 
 ### Backend
-- **Node.js** - Runtime
-- **Express** - Web framework
-- **Multer** - File upload handling
-- **pdf-parse** - PDF text extraction
-- **Axios** - HTTP client for AI API
+| Library | Version | Purpose |
+|---------|---------|---------|
+| Node.js | 18+ | Runtime |
+| Express | 4 | Web framework |
+| bcryptjs | 2.x | Password hashing |
+| Multer | — | File upload handling |
+| pdf-parse | — | PDF text extraction |
+| uuid | — | ID generation |
+| Axios | — | IBM API calls |
 
 ### AI Service
-- **IBM watsonx.ai** - AI platform
-- **Granite Model** - Text generation
+- **IBM watsonx.ai** — AI platform
+- **IBM Granite** — Text generation model
 
 ### Storage
-- **In-Memory Maps** - Data storage (MVP)
-- **localStorage** - User profile persistence
+- **In-Memory Maps** — Server-side data store (resets on restart)
+- **localStorage** — User session persistence in browser
 
 ---
 
@@ -66,98 +55,24 @@ Upload a document (PDF or text file) and receive AI-generated summaries in multi
 
 ### Prerequisites
 - Node.js 18 or higher
-- npm or yarn
+- npm
 - IBM Cloud account with watsonx.ai access
-- Code editor (VS Code recommended)
 
-### Setup Steps
+### 1. Install dependencies
 
-1. **Clone or create project structure**
-   ```bash
-   mkdir ai-document-summarizer
-   cd ai-document-summarizer
-   ```
+```bash
+# Backend
+cd server
+npm install
 
-2. **Review planning documents**
-   - Read [`PROJECT_PLAN.md`](PROJECT_PLAN.md) for complete specifications
-   - Check [`QUICK_START.md`](QUICK_START.md) for implementation roadmap
-   - Review [`ARCHITECTURE.md`](ARCHITECTURE.md) for system design
-
-3. **Setup IBM watsonx.ai**
-   - Create IBM Cloud account at cloud.ibm.com
-   - Create watsonx.ai service instance
-   - Obtain API key and project ID
-   - Save credentials securely
-
-4. **Follow the implementation roadmap**
-   - See [`QUICK_START.md`](QUICK_START.md) for day-by-day guide
-   - Start with Day 1: Backend Foundation
-   - Progress sequentially through each day
-
----
-
-## 📋 Project Timeline
-
-### 3-5 Day Development Plan
-
-| Day | Focus | Deliverable |
-|-----|-------|-------------|
-| **Day 1** | Backend Foundation | Working file upload and AI connection |
-| **Day 2** | AI Integration | All summary modes functional |
-| **Day 3** | Frontend Core | End-to-end user flow working |
-| **Day 4** | Polish & Features | Complete user experience |
-| **Day 5** | Demo Ready | Polished, presentable product |
-
----
-
-## 🎨 Key Features
-
-### Core Features (MVP)
-✅ Upload PDF and TXT files (max 5MB)  
-✅ Extract text from documents  
-✅ Generate summaries in 3 modes  
-✅ Display results with statistics  
-✅ View summary history  
-✅ Basic user profile  
-✅ Clean, modern UI  
-
-### Extended Features
-🎯 ELI5 (Explain Like I'm 5) mode  
-🎯 Export summaries as files  
-🎯 Summary comparison view  
-🎯 Advanced statistics  
-🎯 Dark mode  
-
----
-
-## 📊 System Architecture
-
-### High-Level Overview
-
-```
-┌─────────────┐
-│   React     │ ← User Interface
-│  Frontend   │   (Port 3000)
-└──────┬──────┘
-       │ HTTP/REST
-┌──────▼──────┐
-│   Express   │ ← API Server
-│   Backend   │   (Port 5000)
-└──────┬──────┘
-       │ HTTPS
-┌──────▼──────┐
-│ IBM Granite │ ← AI Service
-│  watsonx.ai │   (Cloud)
-└─────────────┘
+# Frontend
+cd ../client
+npm install
 ```
 
-For detailed architecture diagrams, see [`ARCHITECTURE.md`](ARCHITECTURE.md).
+### 2. Configure environment variables
 
----
-
-## 🔑 Environment Variables
-
-### Backend (.env)
+**`server/.env`**
 ```bash
 PORT=5000
 NODE_ENV=development
@@ -165,207 +80,210 @@ WATSONX_API_KEY=your_api_key_here
 WATSONX_PROJECT_ID=your_project_id_here
 WATSONX_SERVICE_URL=https://us-south.ml.cloud.ibm.com
 MAX_FILE_SIZE=5242880
-FRONTEND_URL=http://localhost:3000
+FRONTEND_URL=http://localhost:5173
 ```
 
-### Frontend (.env)
+**`client/.env`**
 ```bash
 VITE_API_URL=http://localhost:5000/api
 ```
+
+### 3. Start servers
+
+```bash
+# Terminal 1 — Backend
+cd server
+npm run dev
+
+# Terminal 2 — Frontend
+cd client
+npm run dev
+```
+
+Access the app at **http://localhost:5173**
 
 ---
 
 ## 📁 Project Structure
 
 ```
-ai-document-summarizer/
-├── docs/
-│   ├── PROJECT_PLAN.md      # Complete detailed plan
-│   ├── QUICK_START.md       # Implementation guide
-│   ├── ARCHITECTURE.md      # System architecture
-│   └── README.md            # This file
+DesafioTecnico_IBM/
+├── client/                        # React frontend
+│   └── src/
+│       ├── components/
+│       │   ├── common/            # Button, Card, LoadingSpinner, ErrorMessage
+│       │   ├── layout/            # Header, Footer, Layout
+│       │   ├── summary/           # SummaryDisplay, SummaryModeSelector
+│       │   └── upload/            # FileUpload
+│       ├── context/
+│       │   ├── UserContext.jsx    # Auth state (user, login, logout, register)
+│       │   └── SummaryContext.jsx # Summary state and history
+│       ├── pages/
+│       │   ├── LoginPage.jsx      # Login + Register
+│       │   ├── HomePage.jsx       # Upload + Generate
+│       │   ├── HistoryPage.jsx    # Summary history with modal
+│       │   └── ProfilePage.jsx    # User profile + logout
+│       ├── services/
+│       │   ├── api.js             # Axios instance with interceptors
+│       │   ├── userService.js     # User API calls
+│       │   ├── documentService.js # Document upload API
+│       │   └── summaryService.js  # Summary generation API
+│       └── utils/
+│           ├── constants.js       # App constants and config
+│           └── formatters.js      # Formatters + password validator
 │
-├── client/                  # React frontend
-│   ├── src/
-│   │   ├── components/      # React components
-│   │   ├── pages/           # Page components
-│   │   ├── context/         # Context providers
-│   │   ├── services/        # API services
-│   │   ├── hooks/           # Custom hooks
-│   │   └── utils/           # Utilities
-│   └── package.json
-│
-└── server/                  # Express backend
-    ├── src/
-    │   ├── routes/          # API routes
-    │   ├── controllers/     # Request handlers
-    │   ├── services/        # Business logic
-    │   ├── middleware/      # Express middleware
-    │   ├── config/          # Configuration
-    │   └── utils/           # Utilities
-    └── package.json
+└── server/                        # Express backend
+    └── src/
+        ├── controllers/
+        │   ├── user.controller.js      # Create, login, get, update
+        │   ├── summary.controller.js   # Generate, get, list, delete
+        │   └── document.controller.js  # Upload and parse
+        ├── services/
+        │   ├── storage.service.js      # In-memory data store
+        │   └── watsonx.service.js      # IBM Granite AI integration
+        ├── routes/
+        │   ├── user.routes.js
+        │   ├── summary.routes.js
+        │   └── document.routes.js
+        ├── middleware/
+        │   ├── validateRequest.js      # Input + password validation
+        │   ├── errorHandler.js
+        │   └── logger.js
+        └── utils/
+            ├── helpers.js
+            └── constants.js
 ```
 
 ---
 
-## 🎬 Demo Strategy
+## 📖 API Reference
 
-### Video Structure (3-5 minutes)
-1. **Introduction** (30s) - Project overview
-2. **Core Demo** (2m) - Upload and summarize
-3. **Features** (1m) - History and profile
-4. **Technical** (1m) - Architecture highlights
-5. **Closing** (30s) - Summary and next steps
+**Base URL:** `http://localhost:5000/api`
 
-### Key Talking Points
-- Multiple summary modes for different use cases
-- Clean architecture with separation of concerns
-- IBM Granite integration with prompt engineering
-- Professional UI/UX design
-- Scalable and maintainable code
+### Users
 
----
+| Method | Endpoint | Body | Description |
+|--------|----------|------|-------------|
+| `POST` | `/users` | `{ name, email, password }` | Register new user |
+| `POST` | `/users/login` | `{ email, password }` | Login |
+| `GET` | `/users/:userId` | — | Get user profile |
+| `PUT` | `/users/:userId` | `{ name?, email? }` | Update profile |
 
-## 🎯 Success Criteria
+### Documents
 
-### Technical
-- ✅ All core features working
-- ✅ Clean, maintainable code
-- ✅ Proper error handling
-- ✅ Responsive UI
-- ✅ Good performance (<5s summaries)
+| Method | Endpoint | Body | Description |
+|--------|----------|------|-------------|
+| `POST` | `/documents/upload` | `multipart/form-data` (file + userId) | Upload and parse document |
 
-### Demo
-- ✅ Smooth presentation
-- ✅ All features demonstrated
-- ✅ Technical depth shown
-- ✅ Professional appearance
+### Summaries
+
+| Method | Endpoint | Body | Description |
+|--------|----------|------|-------------|
+| `POST` | `/summaries/generate` | `{ documentId, mode, userId }` | Generate summary |
+| `GET` | `/summaries/user/:userId` | — | Get all summaries for user |
+| `GET` | `/summaries/:summaryId` | — | Get single summary |
+| `DELETE` | `/summaries/:summaryId` | — | Delete summary |
 
 ---
 
-## 🛠️ Development Commands
+## ✅ Implemented Features
 
-### Backend
-```bash
-cd server
-npm install
-npm run dev          # Start development server
-npm start            # Start production server
-```
+### Authentication
+- **Register** — Name, email, and password with strength enforcement
+- **Login** — Email + password with bcrypt verification
+- **Logout** — Clears session and all in-memory state
+- **Protected routes** — Unauthenticated users are redirected to `/login`
+- **Per-user data isolation** — Each user only sees their own summaries
 
-### Frontend
-```bash
-cd client
-npm install
-npm run dev          # Start development server
-npm run build        # Build for production
-npm run preview      # Preview production build
-```
+### Password Security
+- Minimum 8 characters
+- At least one uppercase letter
+- At least one lowercase letter
+- At least one number
+- At least one special character
+- Hashed with bcrypt (salt rounds: 10) — never stored or returned in plain text
+- Real-time validation checklist shown during registration
 
----
+### Document Processing
+- Upload PDF and TXT files (max 5MB)
+- Automatic text extraction
+- Word count calculation stored on upload
 
-## 📖 API Documentation
+### AI Summarization (IBM Granite)
+- 4 summary modes: TL;DR, Detailed, Bullet Points, ELI5
+- Stats per summary: original word count, summary word count, compression ratio, processing time
+- Summaries are linked to the user who generated them
 
-### Base URL
-```
-http://localhost:5000/api
-```
+### History
+- Lists all summaries for the logged-in user
+- Click any card to open a modal with the full text and stats
+- Copy to clipboard button inside modal
 
-### Key Endpoints
+### Profile
+- View name, email, registration date, total summary count
+- Edit profile (name and email)
+- Logout button
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/users` | Create user profile |
-| GET | `/users/:userId` | Get user profile |
-| POST | `/documents/upload` | Upload document |
-| POST | `/summaries/generate` | Generate summary |
-| GET | `/summaries/user/:userId` | Get user summaries |
-| GET | `/summaries/:summaryId` | Get specific summary |
-| DELETE | `/summaries/:summaryId` | Delete summary |
-
-For complete API specifications, see [`PROJECT_PLAN.md`](PROJECT_PLAN.md#5-api-specification).
-
----
-
-## 🔒 Security Considerations
-
-- ✅ API keys stored in environment variables
-- ✅ File type and size validation
-- ✅ Input sanitization
-- ✅ CORS configuration
-- ✅ Error messages don't expose sensitive info
-- ✅ No authentication needed (demo/MVP)
+### UI / UX
+- Show/hide password toggle (below field, no overlap)
+- Toast notifications for all actions
+- Loading spinners during async operations
+- Responsive layout
 
 ---
 
-## 🚧 Known Limitations (MVP)
+## 🔑 Environment Variables
 
-- In-memory storage (data lost on restart)
-- No user authentication
-- Single user session
+| Variable | Where | Description |
+|----------|-------|-------------|
+| `PORT` | server | Port to run Express (default 5000) |
+| `NODE_ENV` | server | `development` or `production` |
+| `WATSONX_API_KEY` | server | IBM Cloud API key |
+| `WATSONX_PROJECT_ID` | server | watsonx.ai project ID |
+| `WATSONX_SERVICE_URL` | server | IBM regional endpoint |
+| `MAX_FILE_SIZE` | server | Max upload size in bytes |
+| `FRONTEND_URL` | server | CORS allowed origin |
+| `VITE_API_URL` | client | Backend API base URL |
+
+---
+
+## 🚧 Known Limitations
+
+- In-memory storage — all data is lost when the server restarts
+- No email verification
+- No password reset flow
 - Limited to PDF and TXT files
-- 5MB file size limit
 - Local deployment only
 
-### Future Enhancements
-- Database persistence (PostgreSQL/MongoDB)
-- User authentication and authorization
-- Multi-user support
-- Additional file formats (DOCX, PPTX)
-- Cloud deployment
-- Rate limiting
-- Caching layer
+---
+
+## 🔒 Security Notes
+
+- Passwords hashed with bcrypt before storage
+- `passwordHash` is never returned by any API endpoint
+- Email/password login returns a generic error for both wrong email and wrong password (no enumeration)
+- API keys are stored in `.env` (never committed)
+- File type and size validated on upload
 
 ---
 
-## 🤝 Contributing
+## 📚 Additional Documentation
 
-This is a technical challenge project. For production use:
-1. Add database persistence
-2. Implement authentication
-3. Add comprehensive testing
-4. Setup CI/CD pipeline
-5. Deploy to cloud platform
-6. Add monitoring and logging
+| Document | Purpose |
+|----------|---------|
+| [PROJECT_PLAN.md](PROJECT_PLAN.md) | Original detailed plan and specifications |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | System architecture diagrams |
+| [QUICK_START.md](QUICK_START.md) | Day-by-day implementation guide |
 
 ---
 
-## 📝 License
+## 🤝 Acknowledgments
 
-This project is created for educational and demonstration purposes as part of a technical internship challenge.
-
----
-
-## 🙏 Acknowledgments
-
-- **IBM watsonx.ai** - AI platform and Granite model
-- **React Team** - Frontend framework
-- **Express Team** - Backend framework
-- **Tailwind CSS** - Styling framework
+- **IBM watsonx.ai** — AI platform and Granite model
+- **React** — Frontend framework
+- **Express** — Backend framework
+- **Tailwind CSS** — Utility-first styling
 
 ---
 
-## 📞 Next Steps
-
-1. ✅ Review all planning documents
-2. ✅ Setup IBM watsonx.ai account
-3. ✅ Create project structure
-4. ✅ Start Day 1 implementation
-5. ✅ Follow [`QUICK_START.md`](QUICK_START.md) roadmap
-
----
-
-## 📚 Additional Resources
-
-- [IBM watsonx.ai Documentation](https://www.ibm.com/docs/en/watsonx-as-a-service)
-- [React Documentation](https://react.dev)
-- [Express Documentation](https://expressjs.com)
-- [Tailwind CSS Documentation](https://tailwindcss.com)
-
----
-
-**Ready to build? Start with [`QUICK_START.md`](QUICK_START.md)! 🚀**
-
----
-
-*Last Updated: April 2, 2026*
+*Last Updated: April 5, 2026*

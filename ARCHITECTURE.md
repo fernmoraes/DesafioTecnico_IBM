@@ -2,166 +2,152 @@
 
 ## High-Level Architecture
 
-```mermaid
-graph TB
-    subgraph "Client Layer"
-        UI[React Frontend<br/>Port 3000]
-        UI --> Upload[File Upload]
-        UI --> Summary[Summary Display]
-        UI --> History[History View]
-        UI --> Profile[Profile Management]
-    end
-    
-    subgraph "Server Layer"
-        API[Express API<br/>Port 5000]
-        Routes[Routes Layer]
-        Controllers[Controllers Layer]
-        Services[Services Layer]
-        
-        API --> Routes
-        Routes --> Controllers
-        Controllers --> Services
-    end
-    
-    subgraph "Services"
-        WatsonX[WatsonX Service]
-        FileParser[File Parser Service]
-        Storage[Storage Service]
-        Validation[Validation Service]
-    end
-    
-    subgraph "External"
-        IBM[IBM watsonx.ai<br/>Granite Model]
-    end
-    
-    UI -->|HTTP/REST| API
-    Services --> WatsonX
-    Services --> FileParser
-    Services --> Storage
-    Services --> Validation
-    WatsonX -->|HTTPS| IBM
+```
+┌──────────────────────────────────────────────────────────────┐
+│                         CLIENT LAYER                          │
+│   React Application (Port 5173)                               │
+│   Login · Register · Summarize · History · Profile            │
+└───────────────────────┬──────────────────────────────────────┘
+                        │ HTTP/REST (Axios)
+┌───────────────────────▼──────────────────────────────────────┐
+│                        SERVER LAYER                           │
+│   Express API (Port 5000)                                     │
+│                                                               │
+│   Routes → Controllers → Services                             │
+│   ├── user.routes         user.controller                     │
+│   ├── document.routes     document.controller                 │
+│   └── summary.routes      summary.controller                  │
+│                                                               │
+│   Services                                                    │
+│   ├── storage.service   (in-memory Maps + bcrypt)             │
+│   └── watsonx.service   (IBM Granite integration)             │
+└───────────────────────┬──────────────────────────────────────┘
+                        │ HTTPS
+┌───────────────────────▼──────────────────────────────────────┐
+│                     EXTERNAL SERVICES                         │
+│   IBM watsonx.ai — Granite Model                              │
+└──────────────────────────────────────────────────────────────┘
 ```
 
-## Data Flow - Summary Generation
+---
+
+## Authentication Flow
 
 ```mermaid
 sequenceDiagram
     participant User
     participant Frontend
     participant Backend
-    participant FileParser
+    participant Storage
+
+    User->>Frontend: Fill register form (name, email, password)
+    Frontend->>Frontend: Validate password rules (client-side)
+    Frontend->>Backend: POST /api/users { name, email, password }
+    Backend->>Backend: validateUserCreation middleware
+    Backend->>Storage: getUserByEmail (check duplicate)
+    Storage-->>Backend: null (no duplicate)
+    Backend->>Storage: createUser (bcrypt.hashSync password)
+    Storage-->>Backend: safeUser (no passwordHash)
+    Backend-->>Frontend: { success, data: safeUser }
+    Frontend->>Frontend: setUser + localStorage
+
+    User->>Frontend: Fill login form (email, password)
+    Frontend->>Backend: POST /api/users/login { email, password }
+    Backend->>Storage: getUserByEmail (raw with passwordHash)
+    Backend->>Backend: bcrypt.compareSync(password, hash)
+    Backend-->>Frontend: { success, data: safeUser } or 400 error
+    Frontend->>Frontend: setUser + localStorage
+```
+
+---
+
+## Summary Generation Flow
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Frontend
+    participant Backend
     participant WatsonX
     participant IBM as IBM Granite
 
-    User->>Frontend: Upload Document
-    Frontend->>Frontend: Validate File
-    Frontend->>Backend: POST /api/documents/upload
-    Backend->>FileParser: Extract Text
-    FileParser-->>Backend: Extracted Text
-    Backend-->>Frontend: Document Object
-    
-    User->>Frontend: Select Summary Mode
-    User->>Frontend: Click Generate
-    Frontend->>Backend: POST /api/summaries/generate
-    Backend->>WatsonX: Generate Summary
-    WatsonX->>WatsonX: Build Prompt
-    WatsonX->>IBM: API Request
-    IBM-->>WatsonX: AI Response
-    WatsonX->>WatsonX: Post-Process
-    WatsonX-->>Backend: Summary Text
-    Backend->>Backend: Store in Memory
-    Backend-->>Frontend: Summary Object
-    Frontend->>Frontend: Display Result
-    Frontend-->>User: Show Summary
+    User->>Frontend: Upload file
+    Frontend->>Backend: POST /api/documents/upload (multipart + userId)
+    Backend->>Backend: pdf-parse or UTF-8 read
+    Backend->>Backend: store document with wordCount
+    Backend-->>Frontend: document object
+
+    User->>Frontend: Select mode + click Generate
+    Frontend->>Backend: POST /api/summaries/generate { documentId, mode, userId }
+    Backend->>Backend: record startTime
+    Backend->>WatsonX: generateSummary(textContent, mode)
+    WatsonX->>IBM: API request with mode-specific prompt
+    IBM-->>WatsonX: generated text
+    WatsonX-->>Backend: summaryText
+    Backend->>Backend: calculate processingTime, originalWordCount, summaryWordCount
+    Backend->>Backend: storageService.createSummary (linked to userId)
+    Backend-->>Frontend: summary object with all stats
+    Frontend->>Frontend: setCurrentSummary + refreshUser (update summaryCount)
 ```
 
-## Component Architecture - Frontend
+---
+
+## Frontend Component Architecture
 
 ```mermaid
 graph TD
-    App[App.jsx]
     App --> Router[React Router]
-    
-    Router --> Home[HomePage]
-    Router --> HistoryPage[HistoryPage]
-    Router --> ProfilePage[ProfilePage]
-    
-    Home --> Layout[Layout Component]
-    Layout --> Header[Header]
-    Layout --> Footer[Footer]
-    
-    Home --> FileUpload[FileUpload Component]
-    Home --> ModeSelector[SummaryModeSelector]
-    Home --> SummaryDisplay[SummaryDisplay]
-    
-    HistoryPage --> HistoryList[HistoryList]
-    HistoryList --> HistoryItem[HistoryItem]
-    
-    ProfilePage --> ProfileForm[ProfileForm]
-    ProfilePage --> ProfileCard[ProfileCard]
-    
-    App --> UserContext[User Context]
-    App --> SummaryContext[Summary Context]
-    
-    UserContext -.->|provides| Home
-    UserContext -.->|provides| HistoryPage
-    UserContext -.->|provides| ProfilePage
-    
-    SummaryContext -.->|provides| Home
-    SummaryContext -.->|provides| HistoryPage
+    Router --> LoginPage
+    Router --> ProtectedRoute
+
+    ProtectedRoute --> Layout
+    Layout --> Header
+    Layout --> Footer
+    Layout --> HomePage
+    Layout --> HistoryPage
+    Layout --> ProfilePage
+
+    HomePage --> FileUpload
+    HomePage --> SummaryModeSelector
+    HomePage --> SummaryDisplay
+
+    HistoryPage --> SummaryCard[Summary Cards]
+    HistoryPage --> SummaryModal[Modal Portal]
+
+    ProfilePage --> ProfileForm
+    ProfilePage --> LogoutButton
+
+    App --> UserContext
+    App --> SummaryContext
+
+    UserContext -.->|user, login, logout, register, refreshUser| HomePage
+    UserContext -.->|user, logout| ProfilePage
+    UserContext -.->|user| HistoryPage
+    SummaryContext -.->|currentSummary, currentDocument| HomePage
+    SummaryContext -.->|summaries, loadHistory| HistoryPage
+    SummaryContext -.->|clearAll| LoginPage
+    SummaryContext -.->|clearAll| ProfilePage
 ```
 
-## Backend Structure
+---
 
-```mermaid
-graph LR
-    subgraph "Routes"
-        UserRoutes[user.routes.js]
-        DocRoutes[document.routes.js]
-        SummaryRoutes[summary.routes.js]
-    end
-    
-    subgraph "Controllers"
-        UserCtrl[user.controller.js]
-        DocCtrl[document.controller.js]
-        SummaryCtrl[summary.controller.js]
-    end
-    
-    subgraph "Services"
-        WatsonXSvc[watsonx.service.js]
-        ParserSvc[fileParser.service.js]
-        StorageSvc[storage.service.js]
-        ValidationSvc[validation.service.js]
-    end
-    
-    UserRoutes --> UserCtrl
-    DocRoutes --> DocCtrl
-    SummaryRoutes --> SummaryCtrl
-    
-    UserCtrl --> StorageSvc
-    DocCtrl --> ParserSvc
-    DocCtrl --> StorageSvc
-    SummaryCtrl --> WatsonXSvc
-    SummaryCtrl --> StorageSvc
-    SummaryCtrl --> ValidationSvc
-```
-
-## Data Model Relationships
+## Data Model
 
 ```mermaid
 erDiagram
     USER ||--o{ DOCUMENT : uploads
     USER ||--o{ SUMMARY : creates
     DOCUMENT ||--o{ SUMMARY : generates
-    
+
     USER {
         string id PK
         string name
         string email
+        string passwordHash
         date createdAt
         number summaryCount
     }
-    
+
     DOCUMENT {
         string id PK
         string userId FK
@@ -172,7 +158,7 @@ erDiagram
         date uploadedAt
         number wordCount
     }
-    
+
     SUMMARY {
         string id PK
         string userId FK
@@ -187,313 +173,162 @@ erDiagram
     }
 ```
 
-## State Management Flow
+> `passwordHash` is never returned by any API endpoint — stripped in every `getUser`, `createUser`, and `updateUser` response.
+
+---
+
+## State Management
 
 ```mermaid
 graph TD
-    LocalStorage[localStorage]
-    
-    subgraph "User Context"
-        UserState[User State]
-        CreateUser[createUser]
-        UpdateUser[updateUser]
+    localStorage -->|load on mount| UserState
+
+    subgraph UserContext
+        UserState[user]
+        login
+        createUser
+        updateUser
+        refreshUser
+        logout
     end
-    
-    subgraph "Summary Context"
-        SummaryState[Summary State]
-        CurrentSummary[currentSummary]
-        SummaryHistory[summaries array]
-        GenerateSummary[generateSummary]
-        LoadHistory[loadHistory]
+
+    subgraph SummaryContext
+        currentSummary
+        currentDocument
+        summaries
+        generateSummary
+        loadHistory
+        clearAll
     end
-    
-    LocalStorage -->|load on mount| UserState
-    UserState -->|save on change| LocalStorage
-    
-    GenerateSummary -->|creates| CurrentSummary
-    GenerateSummary -->|adds to| SummaryHistory
-    LoadHistory -->|populates| SummaryHistory
-    
-    UserState -.->|userId| GenerateSummary
-    UserState -.->|userId| LoadHistory
+
+    UserState -->|save on change| localStorage
+    logout -->|remove| localStorage
+
+    generateSummary -->|sets| currentSummary
+    generateSummary -->|prepends to| summaries
+    generateSummary -->|triggers| refreshUser
+    loadHistory -->|merges server + session| summaries
+    clearAll -->|resets all| SummaryContext
+
+    login -->|triggers| clearAll
+    logout -->|triggers| clearAll
 ```
 
-## API Request Flow
+---
 
-```mermaid
-graph LR
-    Client[React Component]
-    Service[API Service]
-    Axios[Axios Instance]
-    Backend[Express Server]
-    
-    Client -->|calls| Service
-    Service -->|uses| Axios
-    Axios -->|HTTP request| Backend
-    Backend -->|JSON response| Axios
-    Axios -->|returns data| Service
-    Service -->|returns data| Client
-    
-    Client -->|on error| ErrorHandler[Error Handler]
-    ErrorHandler -->|shows| Toast[Toast Notification]
+## Backend Module Map
+
+```
+server/src/
+├── controllers/
+│   ├── user.controller.js
+│   │   ├── createUser      POST /users        — hash password, check email dup
+│   │   ├── loginUser       POST /users/login  — bcrypt compare, strip hash
+│   │   ├── getUser         GET  /users/:id
+│   │   └── updateUser      PUT  /users/:id
+│   ├── document.controller.js
+│   │   └── uploadDocument  POST /documents/upload
+│   └── summary.controller.js
+│       ├── generateSummary POST /summaries/generate — tracks processingTime
+│       ├── getSummary      GET  /summaries/:id
+│       ├── getUserSummaries GET /summaries/user/:id
+│       └── deleteSummary   DELETE /summaries/:id
+│
+├── services/
+│   ├── storage.service.js
+│   │   ├── createUser(data)         — bcrypt hash, returns safeUser
+│   │   ├── getUserRaw(id)           — with passwordHash (for auth only)
+│   │   ├── getUser(id)              — passwordHash stripped
+│   │   ├── getUserByEmail(email)    — raw (for login verification)
+│   │   ├── verifyPassword(user, pw) — bcrypt.compareSync
+│   │   ├── updateUser(id, updates)  — re-hashes if password provided
+│   │   ├── createDocument(data)
+│   │   ├── createSummary(data)      — increments user.summaryCount
+│   │   └── getUserSummaries(userId)
+│   └── watsonx.service.js
+│       └── generateSummary(text, mode) — mode-specific prompts
+│
+└── middleware/
+    ├── validateRequest.js
+    │   ├── validateUserCreation  — checks name/email/password + regex
+    │   └── PASSWORD_REGEX        — /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[special]).{8,}$/
+    └── errorHandler.js
 ```
 
-## File Upload Process
+---
 
-```mermaid
-flowchart TD
-    Start([User Selects File])
-    Start --> Validate{Valid Type<br/>and Size?}
-    
-    Validate -->|No| ShowError[Show Error Message]
-    ShowError --> End([End])
-    
-    Validate -->|Yes| CreateFormData[Create FormData]
-    CreateFormData --> SendToBackend[POST to /api/documents/upload]
-    
-    SendToBackend --> BackendReceive[Backend Receives File]
-    BackendReceive --> ExtractText{File Type?}
-    
-    ExtractText -->|PDF| ParsePDF[Use pdf-parse]
-    ExtractText -->|TXT| ReadText[Read as UTF-8]
-    
-    ParsePDF --> CleanText[Clean Text]
-    ReadText --> CleanText
-    
-    CleanText --> StoreDoc[Store in Memory]
-    StoreDoc --> ReturnDoc[Return Document Object]
-    ReturnDoc --> DisplayPreview[Display File Preview]
-    DisplayPreview --> End
+## Password Security
+
+```
+Register
+  └── Client validates rules in real-time (PasswordInput component)
+      └── POST /api/users
+          └── validateUserCreation middleware checks PASSWORD_REGEX
+              └── storage.createUser → bcrypt.hashSync(password, 10)
+                  └── passwordHash stored in memory Map
+                      └── { passwordHash, ...rest } → only rest returned
+
+Login
+  └── POST /api/users/login { email, password }
+      └── getUserByEmail → raw user (with hash)
+          └── bcrypt.compareSync(password, passwordHash)
+              └── match: strip hash, return safeUser
+              └── no match: generic "Invalid email or password" (no enumeration)
 ```
 
-## Summary Generation Process
+---
 
-```mermaid
-flowchart TD
-    Start([User Clicks Generate])
-    Start --> CheckMode{Mode<br/>Selected?}
-    
-    CheckMode -->|No| ShowWarning[Show Warning]
-    ShowWarning --> End([End])
-    
-    CheckMode -->|Yes| ShowLoading[Show Loading Spinner]
-    ShowLoading --> BuildPrompt[Build Mode-Specific Prompt]
-    
-    BuildPrompt --> SetParams[Set Model Parameters]
-    SetParams --> CallAPI[Call IBM watsonx.ai API]
-    
-    CallAPI --> APISuccess{API<br/>Success?}
-    
-    APISuccess -->|No| Retry{Retry<br/>Count < 3?}
-    Retry -->|Yes| CallAPI
-    Retry -->|No| ShowError[Show Error Message]
-    ShowError --> End
-    
-    APISuccess -->|Yes| PostProcess[Post-Process Response]
-    PostProcess --> Validate{Valid<br/>Summary?}
-    
-    Validate -->|No| ShowError
-    Validate -->|Yes| StoreSummary[Store in Memory]
-    
-    StoreSummary --> CalcStats[Calculate Statistics]
-    CalcStats --> UpdateHistory[Update History]
-    UpdateHistory --> DisplayResult[Display Summary]
-    DisplayResult --> HideLoading[Hide Loading Spinner]
-    HideLoading --> End
-```
+## API Endpoints
 
-## Error Handling Strategy
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `POST` | `/api/users` | — | Register (name, email, password) |
+| `POST` | `/api/users/login` | — | Login (email, password) |
+| `GET` | `/api/users/:userId` | — | Get profile |
+| `PUT` | `/api/users/:userId` | — | Update profile |
+| `POST` | `/api/documents/upload` | userId in body | Upload PDF or TXT |
+| `POST` | `/api/summaries/generate` | userId in body | Generate summary |
+| `GET` | `/api/summaries/user/:userId` | — | User's summary history |
+| `GET` | `/api/summaries/:summaryId` | — | Single summary |
+| `DELETE` | `/api/summaries/:summaryId` | — | Delete summary |
 
-```mermaid
-graph TD
-    Error[Error Occurs]
-    
-    Error --> Type{Error Type?}
-    
-    Type -->|Validation| ValidationError[400 Bad Request]
-    Type -->|Not Found| NotFoundError[404 Not Found]
-    Type -->|File Size| FileSizeError[413 Payload Too Large]
-    Type -->|File Type| FileTypeError[415 Unsupported Media]
-    Type -->|AI Service| AIError[502 Bad Gateway]
-    Type -->|Server| ServerError[500 Internal Error]
-    
-    ValidationError --> LogError[Log Error]
-    NotFoundError --> LogError
-    FileSizeError --> LogError
-    FileTypeError --> LogError
-    AIError --> LogError
-    ServerError --> LogError
-    
-    LogError --> ReturnJSON[Return JSON Error Response]
-    ReturnJSON --> FrontendReceive[Frontend Receives Error]
-    FrontendReceive --> ShowToast[Show Toast Notification]
-    ShowToast --> UserAction[User Can Retry]
-```
+---
 
-## Deployment Architecture
+## Error Handling
 
-```mermaid
-graph TB
-    subgraph "Development Environment"
-        DevFrontend[React Dev Server<br/>localhost:3000]
-        DevBackend[Express Server<br/>localhost:5000]
-        DevFrontend <-->|CORS enabled| DevBackend
-    end
-    
-    subgraph "Production Ready"
-        ProdFrontend[Built React App<br/>Static Files]
-        ProdBackend[Express Server<br/>with static serving]
-        ProdFrontend -->|served by| ProdBackend
-    end
-    
-    DevBackend -->|API calls| IBM[IBM watsonx.ai]
-    ProdBackend -->|API calls| IBM
-```
+| Error Name | HTTP Status | Example |
+|------------|-------------|---------|
+| `ValidationError` | 400 | Invalid password, missing fields |
+| `NotFoundError` | 404 | Summary not found |
+| `AIServiceError` | 502 | IBM API failure |
+| — | 413 | File too large (multer) |
+| — | 415 | Unsupported file type |
+| — | 500 | Unexpected server error |
 
-## Technology Stack Overview
-
-```mermaid
-mindmap
-  root((AI Document<br/>Summarizer))
-    Frontend
-      React 18
-      Tailwind CSS
-      React Router
-      Axios
-      react-dropzone
-      react-hot-toast
-      Lucide Icons
-    Backend
-      Node.js
-      Express
-      Multer
-      pdf-parse
-      UUID
-      dotenv
-    AI Service
-      IBM watsonx.ai
-      Granite Model
-      REST API
-    Storage
-      In-Memory Maps
-      localStorage
-    Development
-      Vite
-      Nodemon
-      Git
-```
-
-## Security Considerations
-
-```mermaid
-graph TD
-    Security[Security Measures]
-    
-    Security --> FileValidation[File Validation]
-    FileValidation --> TypeCheck[Check File Type]
-    FileValidation --> SizeCheck[Check File Size]
-    
-    Security --> APIKey[API Key Protection]
-    APIKey --> EnvVars[Environment Variables]
-    APIKey --> NoClientExposure[Never Send to Client]
-    
-    Security --> CORS[CORS Configuration]
-    CORS --> AllowedOrigins[Whitelist Origins]
-    
-    Security --> InputValidation[Input Validation]
-    InputValidation --> SanitizeInput[Sanitize User Input]
-    InputValidation --> ValidateParams[Validate Parameters]
-    
-    Security --> ErrorHandling[Error Handling]
-    ErrorHandling --> NoSensitiveInfo[Hide Sensitive Info]
-    ErrorHandling --> GenericMessages[Generic Error Messages]
-```
+All errors return `{ success: false, error: { message } }`.  
+Sensitive details (stack traces, internal IDs) are never exposed.
 
 ---
 
 ## Key Architectural Decisions
 
-### 1. In-Memory Storage
-**Decision**: Use JavaScript Maps for data storage  
-**Rationale**: 
-- Faster development (no database setup)
-- Sufficient for demo/MVP
-- Easy to migrate to database later
-- No persistence needed for short demo
-
-### 2. Context API for State
-**Decision**: Use React Context instead of Redux  
-**Rationale**:
-- Simpler for small app
-- Less boilerplate
-- Sufficient for our needs
-- Easier to understand
-
-### 3. Monolithic Backend
-**Decision**: Single Express server  
-**Rationale**:
-- Simpler deployment
-- Easier development
-- Sufficient scale for demo
-- Can split later if needed
-
-### 4. Client-Side Routing
-**Decision**: React Router for navigation  
-**Rationale**:
-- Better UX (no page reloads)
-- Easier state management
-- Standard for SPAs
-
-### 5. File Upload Strategy
-**Decision**: Multer with memory storage  
-**Rationale**:
-- No disk I/O needed
-- Faster processing
-- Automatic cleanup
-- Simpler implementation
+| Decision | Choice | Reason |
+|----------|--------|--------|
+| Storage | In-memory Maps | No DB setup needed for demo; easy to swap later |
+| Auth | Email + password (bcrypt) | Secure enough for demo; no JWT needed |
+| State | React Context API | Sufficient for app scale, no Redux overhead |
+| Routing | React Router v6 + ProtectedRoute | Standard SPA pattern |
+| File upload | Multer (memory storage) | No disk I/O, automatic cleanup |
+| Password hashing | bcryptjs salt 10 | Industry standard, synchronous for simplicity |
+| Modal | React Portal (createPortal) | Avoids z-index/overflow issues from layout |
+| Summary isolation | userId stored on summary | Each user queries only their own data |
 
 ---
 
-## Scalability Considerations
+## Ports
 
-### Current Architecture (MVP)
-- In-memory storage
-- Single server instance
-- No caching
-- Synchronous processing
-
-### Future Enhancements
-- Database (PostgreSQL/MongoDB)
-- Redis caching
-- Queue system for long documents
-- Horizontal scaling
-- CDN for static assets
-- Rate limiting
-- User authentication
-
----
-
-## Performance Optimization
-
-### Frontend
-- Code splitting by route
-- Lazy loading components
-- Memoization for expensive operations
-- Debounced search/filter
-- Optimized re-renders
-
-### Backend
-- Response compression
-- Request validation early
-- Efficient text processing
-- Connection pooling (future)
-- Caching AI responses (future)
-
----
-
-This architecture is designed to be:
-- ✅ Simple to implement
-- ✅ Easy to understand
-- ✅ Quick to develop
-- ✅ Ready to demo
-- ✅ Scalable for future growth
+| Service | Port |
+|---------|------|
+| React (Vite dev) | 5173 |
+| Express API | 5000 |
+| IBM watsonx.ai | cloud (HTTPS) |
