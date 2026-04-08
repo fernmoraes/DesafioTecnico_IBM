@@ -53,16 +53,6 @@ IBM AI Summarizer lets users upload PDF or TXT documents and receive AI-generate
 
 ## Application Walkthrough
 
-### Demo — Full Walkthrough
-
-<video src="client/src/assets/ibmrdmevd01.mp4" controls width="100%">
-  <a href="client/src/assets/ibmrdmevd01.mp4">Watch the demo video</a>
-</video>
-
-The video above demonstrates the complete application flow: registration, login, document upload, summary generation across all four modes, history navigation, modal detail view, and profile management.
-
----
-
 ### 1. Registration
 
 ![Registration page](client/src/assets/imbrdme01.png)
